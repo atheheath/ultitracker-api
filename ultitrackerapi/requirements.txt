@@ -1,0 +1,12 @@
+aiofiles
+authlib
+boto3
+fastapi
+passlib
+Pillow
+psycopg2-binary
+python-multipart
+requests
+six
+tqdm
+uvicorn
