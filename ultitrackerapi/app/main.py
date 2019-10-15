@@ -4,12 +4,12 @@ import time
 from fastapi import Depends, FastAPI, HTTPException
 from fastapi.security import OAuth2PasswordRequestForm
 from starlette.middleware.cors import CORSMiddleware
-from starlette.responses import FileResponse
+from starlette.responses import FileResponse, Response
 from starlette.status import HTTP_401_UNAUTHORIZED
 
 from ultitrackerapi import auth
 
-CORS_ORIGINS = ["*"]
+CORS_ORIGINS = ["http://localhost:3000"]
 
 # sleep just to make sure the above happened
 time.sleep(1)
@@ -20,6 +20,10 @@ app = FastAPI()
 app.add_middleware(
     CORSMiddleware,
     allow_origins=CORS_ORIGINS,
+    allow_methods=["*"],
+    allow_credentials=True,
+    allow_headers=["*"],
+    expose_headers=[""]
     # allow_origins=origins
     # allow_origins=origins,
     # allow_credentials=True,
@@ -28,7 +32,7 @@ app.add_middleware(
 )
 
 
-@app.post("/token", response_model=auth.Token)
+@app.post("/token")
 async def login_for_access_token(form_data: OAuth2PasswordRequestForm = Depends()):
     user = auth.authenticate_user(
         auth.sanitize_for_html(form_data.username), form_data.password)
@@ -39,7 +43,13 @@ async def login_for_access_token(form_data: OAuth2PasswordRequestForm = Depends(
             headers={"WWW-Authenticate": "Bearer"},
         )
     access_token = auth.construct_jwt(username=user.username)
-    return {"access_token": access_token, "token_type": "Bearer"}
+    response = Response()
+    response.set_cookie(
+        key="ultitracker-api-access-token",
+        value=access_token,
+        expires=auth.EXP_LENGTH.total_seconds(),
+    )
+    return response
 
 
 @app.post("/add_user")
@@ -54,6 +64,20 @@ async def add_user(userform: auth.UserForm = Depends()):
     )
     is_success = auth.add_user(user)
     return is_success
+
+
+@app.post("/renew_token")
+async def renew_access_token(
+    current_user: auth.User = Depends(auth.get_current_active_user)
+):
+    access_token = auth.construct_jwt(username=current_user.username)
+    response = Response()
+    response.set_cookie(
+        key="ultitracker-api-access-token",
+        value=access_token,
+        expires=auth.EXP_LENGTH.total_seconds(),
+    )
+    return response
 
 
 @app.get("/users/me", response_model=auth.User)
