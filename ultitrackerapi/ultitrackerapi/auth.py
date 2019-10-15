@@ -1,6 +1,8 @@
 """Schemas and functions for handling authentication."""
+import bleach
+
 from authlib.jose import jwt
-from authlib.jose.errors import DecodeError
+from authlib.jose.errors import DecodeError, ExpiredTokenError
 from datetime import datetime, timedelta
 from fastapi import Depends, Form, HTTPException
 from fastapi.security import OAuth2PasswordBearer
@@ -79,8 +81,8 @@ def get_password_hash(password):
     return pbkdf2_sha256.hash(password)
 
 
-def sanitize_sql_string(sql_string: str):
-    return sql_string
+def sanitize_for_html(string):
+    return bleach.clean(string)
 
 
 def is_valid_username(username: str) -> bool:

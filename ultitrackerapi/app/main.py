@@ -30,7 +30,8 @@ app.add_middleware(
 
 @app.post("/token", response_model=auth.Token)
 async def login_for_access_token(form_data: OAuth2PasswordRequestForm = Depends()):
-    user = auth.authenticate_user(form_data.username, form_data.password)
+    user = auth.authenticate_user(
+        auth.sanitize_for_html(form_data.username), form_data.password)
     if not user:
         raise HTTPException(
             status_code=HTTP_401_UNAUTHORIZED,
@@ -45,10 +46,10 @@ async def login_for_access_token(form_data: OAuth2PasswordRequestForm = Depends(
 async def add_user(userform: auth.UserForm = Depends()):
     salted_password = auth.get_password_hash(userform.hashed_password)
     user = auth.UserInDB(
-        username=userform.username,
+        username=auth.sanitize_for_html(userform.username),
         salted_password=salted_password,
-        email=userform.email,
-        full_name=userform.full_name,
+        email=auth.sanitize_for_html(userform.email),
+        full_name=auth.sanitize_for_html(userform.full_name),
         disabled=userform.disabled,
     )
     is_success = auth.add_user(user)

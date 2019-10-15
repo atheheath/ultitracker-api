@@ -1,5 +1,6 @@
 aiofiles
 authlib
+bleach
 boto3
 fastapi
 passlib
