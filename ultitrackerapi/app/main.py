@@ -4,7 +4,8 @@ import time
 from fastapi import Depends, FastAPI, HTTPException
 from fastapi.security import OAuth2PasswordRequestForm
 from starlette.middleware.cors import CORSMiddleware
-from starlette.responses import FileResponse, Response
+from starlette.requests import Request
+from starlette.responses import FileResponse, Response, RedirectResponse
 from starlette.status import HTTP_401_UNAUTHORIZED
 
 from ultitrackerapi import auth
@@ -33,9 +34,12 @@ app.add_middleware(
 
 
 @app.post("/token")
-async def login_for_access_token(form_data: OAuth2PasswordRequestForm = Depends()):
+async def login_for_access_token(
+    form_data: OAuth2PasswordRequestForm = Depends()
+):
     user = auth.authenticate_user(
         auth.sanitize_for_html(form_data.username), form_data.password)
+
     if not user:
         raise HTTPException(
             status_code=HTTP_401_UNAUTHORIZED,
@@ -43,7 +47,9 @@ async def login_for_access_token(form_data: OAuth2PasswordRequestForm = Depends(
             headers={"WWW-Authenticate": "Bearer"},
         )
     access_token = auth.construct_jwt(username=user.username)
+    
     response = Response()
+    
     response.set_cookie(
         key="ultitracker-api-access-token",
         value=access_token,
@@ -54,13 +60,12 @@ async def login_for_access_token(form_data: OAuth2PasswordRequestForm = Depends(
 
 @app.post("/add_user")
 async def add_user(userform: auth.UserForm = Depends()):
-    salted_password = auth.get_password_hash(userform.hashed_password)
+    salted_password = auth.get_password_hash(userform.password)
     user = auth.UserInDB(
         username=auth.sanitize_for_html(userform.username),
         salted_password=salted_password,
         email=auth.sanitize_for_html(userform.email),
-        full_name=auth.sanitize_for_html(userform.full_name),
-        disabled=userform.disabled,
+        full_name=auth.sanitize_for_html(userform.full_name)
     )
     is_success = auth.add_user(user)
     return is_success

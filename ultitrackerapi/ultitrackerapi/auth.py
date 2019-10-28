@@ -46,16 +46,14 @@ class UserForm:
     def __init__(
         self,
         username: str = Form(...),
-        hashed_password: str = Form(...),
+        password: str = Form(...),
         email: str = Form(...),
         full_name: str = Form(...),
-        disabled: bool = Form(...),
     ):
         self.username = username
-        self.hashed_password = hashed_password
+        self.password = password
         self.email = email
         self.full_name = full_name
-        self.disabled = disabled
 
 
 class Token(BaseModel):
@@ -73,8 +71,8 @@ db = {}
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/token")
 
 
-def verify_password(hashed_password, salted_password):
-    return pbkdf2_sha256.verify(hashed_password, salted_password)
+def verify_password(password, salted_password):
+    return pbkdf2_sha256.verify(password, salted_password)
 
 
 def get_password_hash(password):
@@ -110,12 +108,12 @@ def get_user(username: str):
     return db.get(username, None)
 
 
-def authenticate_user(username: str, hashed_password: str):
+def authenticate_user(username: str, password: str):
     user = get_user(username=username)
     if not user:
         return False
 
-    if not verify_password(hashed_password, user.salted_password):
+    if not verify_password(password, user.salted_password):
         return False
 
     return user
@@ -124,6 +122,8 @@ def authenticate_user(username: str, hashed_password: str):
 def add_user(user: UserInDB):
     if user.username in db:
         raise HTTPException(status_code=400, detail="User already exists")
+
+    user.disabled = False
 
     db.update({user.username: user})
 
