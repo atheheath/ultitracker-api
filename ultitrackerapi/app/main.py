@@ -8,7 +8,7 @@ from starlette.requests import Request
 from starlette.responses import FileResponse, Response, RedirectResponse
 from starlette.status import HTTP_401_UNAUTHORIZED
 
-from ultitrackerapi import auth
+from ultitrackerapi import auth, db
 
 CORS_ORIGINS = ["http://localhost:3000"]
 
@@ -90,3 +90,10 @@ async def get_user_info(
     current_user: auth.User = Depends(auth.get_current_active_user)
 ):
     return current_user
+
+
+@app.get("/get_game_list", response_model=db.GameListResponse)
+async def get_game_list(
+    current_user: auth.User = Depends(auth.get_current_active_user)
+):
+    return db.get_game_list(current_user)

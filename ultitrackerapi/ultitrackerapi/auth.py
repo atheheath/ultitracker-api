@@ -13,7 +13,7 @@ from typing import Dict, List
 
 SECRET_KEY = "secret"
 ALGORITHM = "HS256"
-EXP_LENGTH = timedelta(seconds=30)
+EXP_LENGTH = timedelta(seconds=60)
 
 
 # NOTE: Header and Payload information is readable by everyone
@@ -67,7 +67,15 @@ class TokenData(BaseModel):
 
 DB = Dict[str, UserInDB]
 
-db = {}
+user_db: DB = {
+    "test": UserInDB(
+        username="test",
+        email="test@test.com",
+        full_name="Jane Doe",
+        salted_password=pbkdf2_sha256.hash("test")
+    )
+}
+
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/token")
 
 
@@ -84,7 +92,7 @@ def sanitize_for_html(string):
 
 
 def is_valid_username(username: str) -> bool:
-    return username in db
+    return username in user_db
 
 
 def construct_jwt(username: str) -> str:
@@ -105,7 +113,7 @@ def construct_jwt(username: str) -> str:
 
 
 def get_user(username: str):
-    return db.get(username, None)
+    return user_db.get(username, None)
 
 
 def authenticate_user(username: str, password: str):
@@ -120,12 +128,12 @@ def authenticate_user(username: str, password: str):
 
 
 def add_user(user: UserInDB):
-    if user.username in db:
+    if user.username in user_db:
         raise HTTPException(status_code=400, detail="User already exists")
 
     user.disabled = False
 
-    db.update({user.username: user})
+    user_db.update({user.username: user})
 
     return True
 
@@ -151,13 +159,19 @@ async def get_current_user(token: str = Depends(oauth2_scheme)):
             claims.validate(now=datetime.utcnow().timestamp())
         except ExpiredTokenError:
             raise timeout_exception
+
         username: str = claims.get("sub")
+
         if username is None:
             raise credentials_exception
+
         token_data = TokenData(username=username)
+
     except DecodeError:
         raise credentials_exception
+
     user = get_user(username=token_data.username)
+
     if user is None:
         raise credentials_exception
     return user
