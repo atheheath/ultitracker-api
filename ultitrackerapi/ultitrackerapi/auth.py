@@ -22,7 +22,7 @@ user_db: DB = {
         username="test",
         email="test@test.com",
         full_name="Jane Doe",
-        salted_password=pbkdf2_sha256.hash("test")
+        salted_password=pbkdf2_sha256.hash("test"),
     )
 }
 
@@ -56,7 +56,8 @@ def construct_jwt(username: str) -> str:
     ).dict()
 
     encoded_bytes_token = jwt.encode(
-        header=header, payload=payload, key=SECRET_KEY)
+        header=header, payload=payload, key=SECRET_KEY
+    )
     encoded_unicode_token = encoded_bytes_token.decode()
 
     return encoded_unicode_token

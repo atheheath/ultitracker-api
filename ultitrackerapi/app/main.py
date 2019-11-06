@@ -35,10 +35,11 @@ app.add_middleware(
 
 @app.post("/token")
 async def login_for_access_token(
-    form_data: OAuth2PasswordRequestForm = Depends()
+    form_data: OAuth2PasswordRequestForm = Depends(),
 ):
     user = auth.authenticate_user(
-        auth.sanitize_for_html(form_data.username), form_data.password)
+        auth.sanitize_for_html(form_data.username), form_data.password
+    )
 
     if not user:
         raise HTTPException(
@@ -47,9 +48,9 @@ async def login_for_access_token(
             headers={"WWW-Authenticate": "Bearer"},
         )
     access_token = auth.construct_jwt(username=user.username)
-    
+
     response = Response()
-    
+
     response.set_cookie(
         key="ultitracker-api-access-token",
         value=access_token,
@@ -65,7 +66,7 @@ async def add_user(userform: models.UserForm = Depends()):
         username=auth.sanitize_for_html(userform.username),
         salted_password=salted_password,
         email=auth.sanitize_for_html(userform.email),
-        full_name=auth.sanitize_for_html(userform.full_name)
+        full_name=auth.sanitize_for_html(userform.full_name),
     )
     is_success = auth.add_user(user)
     return is_success

@@ -83,6 +83,7 @@ def get_game_list(user: models.User):
         ]
     )
 
+
 """
 To implement authorized S3 files, check out this stack overflow
 https://stackoverflow.com/a/34918921
