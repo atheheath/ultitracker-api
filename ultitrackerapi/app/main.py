@@ -97,3 +97,11 @@ async def get_game_list(
     current_user: models.User = Depends(auth.get_current_active_user),
 ):
     return db.get_game_list(current_user)
+
+
+@app.get("/get_game", response_model=db.GameResponse)
+async def get_game(
+    game_id: str,
+    current_user: models.User = Depends(auth.get_current_active_user),
+):
+    return db.get_game(game_id=game_id, user=current_user)
