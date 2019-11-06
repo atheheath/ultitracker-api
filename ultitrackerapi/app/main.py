@@ -8,7 +8,7 @@ from starlette.requests import Request
 from starlette.responses import FileResponse, Response, RedirectResponse
 from starlette.status import HTTP_401_UNAUTHORIZED
 
-from ultitrackerapi import auth, db
+from ultitrackerapi import auth, db, models
 
 CORS_ORIGINS = ["http://localhost:3000"]
 
@@ -59,9 +59,9 @@ async def login_for_access_token(
 
 
 @app.post("/add_user")
-async def add_user(userform: auth.UserForm = Depends()):
+async def add_user(userform: models.UserForm = Depends()):
     salted_password = auth.get_password_hash(userform.password)
-    user = auth.UserInDB(
+    user = models.UserInDB(
         username=auth.sanitize_for_html(userform.username),
         salted_password=salted_password,
         email=auth.sanitize_for_html(userform.email),
@@ -73,7 +73,7 @@ async def add_user(userform: auth.UserForm = Depends()):
 
 @app.post("/renew_token")
 async def renew_access_token(
-    current_user: auth.User = Depends(auth.get_current_active_user)
+    current_user: models.User = Depends(auth.get_current_active_user),
 ):
     access_token = auth.construct_jwt(username=current_user.username)
     response = Response()
@@ -85,15 +85,15 @@ async def renew_access_token(
     return response
 
 
-@app.get("/users/me", response_model=auth.User)
+@app.get("/users/me", response_model=models.User)
 async def get_user_info(
-    current_user: auth.User = Depends(auth.get_current_active_user)
+    current_user: models.User = Depends(auth.get_current_active_user),
 ):
     return current_user
 
 
 @app.get("/get_game_list", response_model=db.GameListResponse)
 async def get_game_list(
-    current_user: auth.User = Depends(auth.get_current_active_user)
+    current_user: models.User = Depends(auth.get_current_active_user),
 ):
     return db.get_game_list(current_user)

@@ -1,6 +1,6 @@
-from .auth import User
 from pydantic import BaseModel
 from typing import Dict, List
+from ultitrackerapi import models
 
 
 class Game(BaseModel):
@@ -50,7 +50,7 @@ db = {
 }
 
 
-def get_game_list(user: User):
+def initialize_user(user: models.User):
     if user.username not in db:
         db[user.username] = GameList(game_list=[])
 
