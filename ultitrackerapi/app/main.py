@@ -1,7 +1,9 @@
 """API Definitions for ultitracker."""
+import logging
+import tempfile
 import time
 
-from fastapi import Depends, FastAPI, HTTPException
+from fastapi import Depends, FastAPI, HTTPException, File, UploadFile
 from fastapi.security import OAuth2PasswordRequestForm
 from starlette.middleware.cors import CORSMiddleware
 from starlette.requests import Request
@@ -106,3 +108,23 @@ async def get_game(
     current_user: models.User = Depends(auth.get_current_active_user),
 ):
     return db.get_game(game_id=game_id, user=current_user)
+
+
+@app.post("/upload_file")
+# async def upload_file(
+#     current_user: models.User = Depends(auth.get_current_active_user),
+#     file: UploadFile = File(...)
+# ):
+async def upload_file(
+    upload_file: UploadFile = File(...)
+):
+    _, new_filename = tempfile.mkstemp()
+    print("New filename: {}".format(new_filename))
+    time.sleep(0.1)
+
+    chunk_size = 10000
+    with open(new_filename, "wb") as f:
+        for chunk in iter(lambda: upload_file.file.read(chunk_size), b''):
+            f.write(chunk)
+
+    return {"finished": True}
