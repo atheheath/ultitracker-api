@@ -17,6 +17,9 @@ class GameResponse(BaseModel):
 class GameList(BaseModel):
     game_list: List[Game]
 
+    def add_game(self, game: Game):
+        self.game_list.append(game)
+
 
 class GameListResponse(BaseModel):
     game_list: List[GameResponse]
@@ -84,7 +87,28 @@ def get_game_list(user: models.User):
     )
 
 
+def add_game(user: models.User, game_id, additional_authorized_users=[], data={}):
+    initialize_user(user)
+
+    db[user.username].add_game(Game(
+        authorized_users=[user.username] + additional_authorized_users,
+        data=data,
+        game_id=game_id
+    ))
+
+    return True
+
+
+
 """
 To implement authorized S3 files, check out this stack overflow
 https://stackoverflow.com/a/34918921
 """
+# s3Client.generate_presigned_url(
+#     "get_object",
+#     Params={
+#         "Bucket": "ultitracker-videos",
+#         "Key": "Men's Highlight Reel--2019 National Championships-zt8jq7EaWxw.mp4"
+#     },
+#     ExpiresIn=60*60*2
+# )

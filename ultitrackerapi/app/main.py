@@ -1,16 +1,19 @@
 """API Definitions for ultitracker."""
+import boto3
+import datetime
 import logging
+import os
 import tempfile
 import time
 
-from fastapi import Depends, FastAPI, HTTPException, File, UploadFile
+from fastapi import Depends, FastAPI, HTTPException, File, Form, UploadFile
 from fastapi.security import OAuth2PasswordRequestForm
 from starlette.middleware.cors import CORSMiddleware
 from starlette.requests import Request
 from starlette.responses import FileResponse, Response, RedirectResponse
 from starlette.status import HTTP_401_UNAUTHORIZED
 
-from ultitrackerapi import auth, db, models
+from ultitrackerapi import auth, db, models, video
 
 CORS_ORIGINS = ["http://localhost:3000"]
 
@@ -34,6 +37,8 @@ app.add_middleware(
     # allow_headers=["*"],
 )
 
+# start s3 client
+s3Client = boto3.client("s3")
 
 @app.post("/token")
 async def login_for_access_token(
@@ -111,20 +116,55 @@ async def get_game(
 
 
 @app.post("/upload_file")
-# async def upload_file(
-#     current_user: models.User = Depends(auth.get_current_active_user),
-#     file: UploadFile = File(...)
-# ):
 async def upload_file(
-    upload_file: UploadFile = File(...)
+    current_user: models.User = Depends(auth.get_current_active_user),
+    upload_file: UploadFile = File(...),
+    home: str = Form(...),
+    away: str = Form(...),
+    date: str = Form(...)
 ):
     _, new_filename = tempfile.mkstemp()
     print("New filename: {}".format(new_filename))
+    print("home, away, date: {}, {}, {}".format(home, away, date))
     time.sleep(0.1)
 
     chunk_size = 10000
     with open(new_filename, "wb") as f:
         for chunk in iter(lambda: upload_file.file.read(chunk_size), b''):
             f.write(chunk)
+
+    thumbnail_name = new_filename + "_thumbnail.jpg"
+    video.get_thumbnail(new_filename, thumbnail_name)
+    video_length = str(datetime.timedelta(seconds=int(video.get_video_duration(new_filename))))
+
+    s3Client.upload_file(
+        new_filename,
+        "ultitracker-videos-test",
+        os.path.basename(new_filename)
+    )
+
+    s3Client.upload_file(
+        thumbnail_name,
+        "ultitracker-videos-test",
+        os.path.basename(thumbnail_name)
+    )
+
+    # s3Client.upload_fileobj(
+    #     upload_file.file,
+    #     "ultitracker-videos-test",
+    #     os.path.basename(new_filename)
+    # )
+
+    db.add_game(
+        current_user,
+        game_id=os.path.basename(new_filename),
+        data={
+            "home": home,
+            "away": away,
+            "date": date,
+            "thumbnail": os.path.basename(thumbnail_name),
+            "length": video_length
+        }
+    )
 
     return {"finished": True}
