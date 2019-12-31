@@ -11,7 +11,8 @@ from fastapi.security import OAuth2PasswordRequestForm
 from starlette.middleware.cors import CORSMiddleware
 from starlette.requests import Request
 from starlette.responses import FileResponse, Response, RedirectResponse
-from starlette.status import HTTP_401_UNAUTHORIZED
+from starlette.status import HTTP_401_UNAUTHORIZED, HTTP_404_NOT_FOUND
+from typing import Optional
 
 from ultitrackerapi import auth, db, models, video
 
@@ -107,18 +108,26 @@ async def get_game_list(
     return db.get_game_list(current_user)
 
 
-@app.get("/get_game", response_model=db.GameResponse)
+@app.get("/get_game", response_model=Optional[db.GameResponse])
 async def get_game(
     game_id: str,
     current_user: models.User = Depends(auth.get_current_active_user),
 ):
-    return db.get_game(game_id=game_id, user=current_user)
+    result = db.get_game(game_id=game_id, user=current_user)
+    if not result:
+        raise HTTPException(
+            status_code=HTTP_404_NOT_FOUND,
+            detail="GameId not found"
+        )
+    else:
+        return result
 
 
 @app.post("/upload_file")
 async def upload_file(
     current_user: models.User = Depends(auth.get_current_active_user),
     upload_file: UploadFile = File(...),
+    name: str = Form(...),
     home: str = Form(...),
     away: str = Form(...),
     date: str = Form(...)
@@ -149,20 +158,20 @@ async def upload_file(
         os.path.basename(thumbnail_name)
     )
 
-    # s3Client.upload_fileobj(
-    #     upload_file.file,
-    #     "ultitracker-videos-test",
-    #     os.path.basename(new_filename)
-    # )
+    os.remove(new_filename)
+    os.remove(thumbnail_name)
 
     db.add_game(
         current_user,
         game_id=os.path.basename(new_filename),
         data={
+            "name": name,
             "home": home,
             "away": away,
             "date": date,
-            "thumbnail": os.path.basename(thumbnail_name),
+            "bucket": "ultitracker-videos-test",
+            "thumbnail_key": os.path.basename(thumbnail_name),
+            "video_key": os.path.basename(new_filename),
             "length": video_length
         }
     )
