@@ -20,7 +20,6 @@ class GameResponse(BaseModel):
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        print("\n\nself.data: {}\nself.args: {}\nself.kwargs: {}\n\n".format(self.data, args, kwargs))
         if len(self.data) != 0:
             self.data["thumbnail"] = s3Client.generate_presigned_url(
                 "get_object",
