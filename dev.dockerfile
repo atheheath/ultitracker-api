@@ -6,7 +6,8 @@ RUN apt-get install -y \
     vim \
     git \ 
     nmap \
-    postgresql-client 
+    postgresql-client \
+    ffmpeg
 
 # install ultitrackerapi python package dependencies
 ADD ./ultitrackerapi/requirements.txt /tmp/requirements.txt
@@ -43,5 +44,9 @@ RUN chmod u+x /root/ultitrackerapi/scripts/docker/*
 ENV SERVER_API_PORT=3001
 ENV SERVER_IMAGE_PORT=6789
 ENV FASTAPI_MODULE=app.main:app
+
+# Get aws credentials in there
+ADD ./.aws/credentials /root/.aws/credentials
+ADD ./.aws/config /root/.aws/config
 
 CMD ["bash", "/root/ultitrackerapi/scripts/docker/docker_start_uvicorn.sh"]

@@ -4,75 +4,25 @@ import bleach
 from authlib.jose import jwt
 from authlib.jose.errors import DecodeError, ExpiredTokenError
 from datetime import datetime, timedelta
-from fastapi import Depends, Form, HTTPException
+from fastapi import Depends, HTTPException
 from fastapi.security import OAuth2PasswordBearer
 from passlib.hash import pbkdf2_sha256
-from pydantic import BaseModel
 from starlette.status import HTTP_401_UNAUTHORIZED
-from typing import Dict, List
+from typing import Dict
+
+from ultitrackerapi import db, models
 
 SECRET_KEY = "secret"
-ALGORITHM = "HS256"
 EXP_LENGTH = timedelta(seconds=60)
 
-
-# NOTE: Header and Payload information is readable by everyone
-class Header(BaseModel):
-    alg: str = ALGORITHM
-    typ: str = "JWT"
-
-
-class Payload(BaseModel):
-    exp: int
-    iat: int
-    iss: str = None
-    sub: str = None
-    aud: List[str] = []
-    nbf: int = None
-
-
-class User(BaseModel):
-    username: str
-    email: str = None
-    full_name: str = None
-    disabled: bool = None
-
-
-class UserInDB(User):
-    salted_password: str
-
-
-class UserForm:
-    def __init__(
-        self,
-        username: str = Form(...),
-        password: str = Form(...),
-        email: str = Form(...),
-        full_name: str = Form(...),
-    ):
-        self.username = username
-        self.password = password
-        self.email = email
-        self.full_name = full_name
-
-
-class Token(BaseModel):
-    access_token: str
-    token_type: str
-
-
-class TokenData(BaseModel):
-    username: str = None
-
-
-DB = Dict[str, UserInDB]
+DB = Dict[str, models.UserInDB]
 
 user_db: DB = {
-    "test": UserInDB(
+    "test": models.UserInDB(
         username="test",
         email="test@test.com",
         full_name="Jane Doe",
-        salted_password=pbkdf2_sha256.hash("test")
+        salted_password=pbkdf2_sha256.hash("test"),
     )
 }
 
@@ -97,8 +47,8 @@ def is_valid_username(username: str) -> bool:
 
 def construct_jwt(username: str) -> str:
     # we need to use dict here so that jwt can use encode
-    header = Header().dict()
-    payload = Payload(
+    header = models.Header().dict()
+    payload = models.Payload(
         iss="https://ultitracker.com",
         exp=(datetime.utcnow() + EXP_LENGTH).timestamp(),
         iat=datetime.utcnow().timestamp(),
@@ -106,7 +56,8 @@ def construct_jwt(username: str) -> str:
     ).dict()
 
     encoded_bytes_token = jwt.encode(
-        header=header, payload=payload, key=SECRET_KEY)
+        header=header, payload=payload, key=SECRET_KEY
+    )
     encoded_unicode_token = encoded_bytes_token.decode()
 
     return encoded_unicode_token
@@ -127,13 +78,14 @@ def authenticate_user(username: str, password: str):
     return user
 
 
-def add_user(user: UserInDB):
+def add_user(user: models.UserInDB):
     if user.username in user_db:
         raise HTTPException(status_code=400, detail="User already exists")
 
     user.disabled = False
 
     user_db.update({user.username: user})
+    db.initialize_user(user)
 
     return True
 
@@ -165,7 +117,7 @@ async def get_current_user(token: str = Depends(oauth2_scheme)):
         if username is None:
             raise credentials_exception
 
-        token_data = TokenData(username=username)
+        token_data = models.TokenData(username=username)
 
     except DecodeError:
         raise credentials_exception
@@ -177,7 +129,9 @@ async def get_current_user(token: str = Depends(oauth2_scheme)):
     return user
 
 
-async def get_current_active_user(current_user: User = Depends(get_current_user)):
+async def get_current_active_user(
+    current_user: models.User = Depends(get_current_user),
+):
     if current_user.disabled:
         raise HTTPException(status_code=400, detail="Inactive user")
     return current_user

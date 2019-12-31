@@ -1,11 +1,16 @@
 aiofiles
 authlib
+black
 bleach
 boto3
 fastapi
+ffmpeg-python
+flake8
 passlib
 Pillow
 psycopg2-binary
+pydocstyle
+pylint
 python-multipart
 requests
 six
