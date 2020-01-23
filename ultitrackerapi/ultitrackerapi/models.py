@@ -1,6 +1,6 @@
 from enum import Enum
 from fastapi import Form
-from pydantic import BaseConfig, BaseModel
+from pydantic import BaseConfig, BaseModel, Field
 from typing import Dict, List, Optional, Set, Type
 
 ALGORITHM = "HS256"
@@ -112,10 +112,25 @@ class Table(BaseModel):
     # Want to allow Type for column_types, so we need
     # to allow aribitrary types for pydantic
     Config = ArbitraryModelConfig
-    name: str
+    table_name: str
+    schema_name: str
     columns: List[str]
     column_types: List[Type]
     create_commands: List[str]
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+
+        if len(self.columns) != len(self.column_types):
+            raise ValueError("columns and column_types must have the same length")
+
+    @staticmethod
+    def construct_full_name(schema_name, table_name):
+        return ".".join([schema_name, table_name])
+
+    @property
+    def full_name(self):
+        return self.construct_full_name(self.schema_name, self.table_name)
 
 
 class ImgEncoding(Enum):
