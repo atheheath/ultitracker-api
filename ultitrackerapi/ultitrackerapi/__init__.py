@@ -1,19 +1,20 @@
+import os
+
+POSTGRES_DATABASE = os.getenv("POSTGRES_DATABASE")
+POSTGRES_HOSTNAME = os.getenv("POSTGRES_HOSTNAME")
+POSTGRES_USERNAME = os.getenv("POSTGRES_USERNAME")
+POSTGRES_PASSWORD = os.getenv("POSTGRES_PASSWORD")
+POSTGRES_PORT = os.getenv("POSTGRES_PORT")
+NUM_CONNECTION_RETRIES = 5
+
 import boto3
-
-from ultitrackerapi import models
-from passlib.hash import pbkdf2_sha256
-
-POSTGRES_DATABASE = ""
-POSTGRES_HOSTNAME = ""
-POSTGRES_USERNAME = ""
-POSTGRES_PASSWORD = ""
-POSTGRES_PORT = ""
-NUM_CONNECTION_RETRIES = ""
 
 # start s3 client
 _s3Client = boto3.client("s3")
 
 from ultitrackerapi.backend import InMemoryBackend
+from ultitrackerapi import models
+from passlib.hash import pbkdf2_sha256
 
 _backend = InMemoryBackend(
     game_db={
@@ -63,6 +64,7 @@ _backend = InMemoryBackend(
 
 def get_backend():
     return _backend
+
 
 def get_s3Client():
     return _s3Client
