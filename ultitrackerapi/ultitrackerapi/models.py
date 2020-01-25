@@ -29,6 +29,10 @@ class User(BaseModel):
 
 
 class UserInDB(User):
+    user_id: str
+
+
+class UserInDBwPass(UserInDB):
     salted_password: str
 
 
@@ -64,6 +68,8 @@ class Game(BaseModel):
 class GameResponse(BaseModel):
     data: Dict
     game_id: str
+    thumbnail_key: str
+    video_key: str
 
     def __init__(self, *args, **kwargs):
 
@@ -78,7 +84,7 @@ class GameResponse(BaseModel):
                 "get_object",
                 Params={
                     "Bucket": self.data["bucket"],
-                    "Key": self.data["thumbnail_key"],
+                    "Key": self.thumbnail_key,
                 },
                 ExpiresIn=10,
             )
@@ -87,7 +93,7 @@ class GameResponse(BaseModel):
                 "get_object",
                 Params={
                     "Bucket": self.data["bucket"],
-                    "Key": self.data["video_key"]
+                    "Key": self.video_key
                 },
                 ExpiresIn=60 * 60 * 2,
             )

@@ -1,3 +1,4 @@
+import logging
 import os
 
 POSTGRES_DATABASE = os.getenv("POSTGRES_DATABASE")
@@ -8,64 +9,53 @@ POSTGRES_PORT = os.getenv("POSTGRES_PORT")
 POSTGRES_SCHEMA = os.getenv("POSTGRES_SCHEMA")
 NUM_CONNECTION_RETRIES = 5
 
+
+def get_logger(name, level=logging.INFO):
+    # create logger
+    logger = logging.getLogger(name)
+    logger.setLevel(level)
+
+    # create console handler and set level to debug
+    ch = logging.StreamHandler()
+    ch.setLevel(level)
+
+    # create formatter
+    formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+
+    # add formatter to ch
+    ch.setFormatter(formatter)
+
+    # add ch to logger
+    logger.addHandler(ch)
+
+    return logger
+
+
 import boto3
 
 # start s3 client
 _s3Client = boto3.client("s3")
 
-from ultitrackerapi.backend import InMemoryBackend
-from ultitrackerapi import models
-from passlib.hash import pbkdf2_sha256
+def get_s3Client():
+    return _s3Client
 
-_backend = InMemoryBackend(
-    game_db={
-        "test": models.GameList(
-            game_list=[
-                models.Game(
-                    authorized_users=["test"],
-                    data={
-                        "home": "Team 1",
-                        "away": "Team 2",
-                        "date": "2019-10-31",
-                        "length": "00:00:10",
-                        "bucket": "ultitracker-videos-test",
-                        "thumbnail_key": "chicago.jpeg",
-                        "video_key": "test_vid_1.mp4",
-                        "name": "Chicago",
-                    },
-                    game_id="test_vid_1.mp4",
-                ),
-                models.Game(
-                    authorized_users=["test"],
-                    data={
-                        "home": "Team 1",
-                        "away": "Team 3",
-                        "date": "2019-11-01",
-                        "length": "00:00:10",
-                        "bucket": "ultitracker-videos-test",
-                        "thumbnail_key": "madison.jpeg",
-                        "video_key": "test_vid_2.mp4",
-                        "name": "Madison",
-                    },
-                    game_id="test_vid_2",
-                ),
-            ]
-        )
-    },
-    user_db={
-        "test": models.UserInDB(
-            username="test",
-            email="test@test.com",
-            full_name="Jane Doe",
-            salted_password=pbkdf2_sha256.hash("test"),
-        )
-    },
+from ultitrackerapi.sql_backend import SQLClient
+
+_sqlClient = SQLClient(
+    username=POSTGRES_USERNAME,
+    password=POSTGRES_PASSWORD,
+    hostname=POSTGRES_HOSTNAME,
+    port=POSTGRES_PORT,
+    database=POSTGRES_DATABASE,
+    num_connection_retries=NUM_CONNECTION_RETRIES
 )
 
+from ultitrackerapi.backend import InMemoryBackend
+from ultitrackerapi.sql_backend import SQLBackend
+from ultitrackerapi import models
+
+# _backend = InMemoryBackend(game_db={}, user_db={})
+_backend = SQLBackend(_sqlClient)
 
 def get_backend():
     return _backend
-
-
-def get_s3Client():
-    return _s3Client

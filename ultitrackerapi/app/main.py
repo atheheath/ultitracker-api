@@ -175,14 +175,14 @@ async def upload_file(
     backend_instance.add_game(
         current_user,
         game_id=os.path.basename(new_filename),
+        thumbnail_key=os.path.basename(thumbnail_name),
+        video_key=os.path.basename(new_filename),
         data={
             "name": name,
             "home": home,
             "away": away,
             "date": date,
             "bucket": "ultitracker-videos-test",
-            "thumbnail_key": os.path.basename(thumbnail_name),
-            "video_key": os.path.basename(new_filename),
             "length": video_length,
         },
     )

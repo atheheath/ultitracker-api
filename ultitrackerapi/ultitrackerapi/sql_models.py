@@ -41,38 +41,23 @@ TableGameMetadata = models.Table(
     schema_name=POSTGRES_SCHEMA,
     columns=[
         "game_id",
-        "name",
-        "home",
-        "away",
-        "date",
-        "length",
-        "bucket",
+        "data",
         "thumbnail_key",
         "video_key",
     ],
     column_types=[
         str,
+        dict,
         str,
-        str,
-        str,
-        datetime.datetime,
-        datetime.timedelta,
-        str,
-        str,
-        str,
+        str
     ],
     create_commands=[
         """
         CREATE TABLE {full_name} (
             game_id TEXT,
-            name TEXT NOT NULL,
-            home TEXT,
-            away TEXT,
-            date DATE NOT NULL,
-            length BIGINT NOT NULL,
-            bucket TEXT NOT NULL,
-            thumbnail_key TEXT NOT NULL,
-            video_key TEXT NOT NULL,
+            data JSON NOT NULL,
+            thumbnail_key TEXT,
+            video_key TEXT,
             PRIMARY KEY (game_id)
         )
         """.format(full_name=models.Table.construct_full_name(POSTGRES_SCHEMA, "game_metadata"))
@@ -115,7 +100,7 @@ TableImgLocation = models.Table(
             img_raw_path TEXT NOT NULL,
             img_type img_encoding NOT NULL,
             img_metadata JSON NOT NULL,
-            game_id TEXT REFERENCES {game_metadata_full_name}(game_id)
+            game_id TEXT REFERENCES {game_metadata_full_name}(game_id),
             PRIMARY KEY (img_id)
         )
         """.format(
