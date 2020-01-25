@@ -170,7 +170,7 @@ class SQLBackend(backend.Backend):
         result = self.client.execute(command)
         logger.debug("SQLBackend.add_user result: {}".format(result))
 
-        return result
+        return True
 
     def username_exists(self, username: str) -> bool:
         if self.get_user(username) is not None:

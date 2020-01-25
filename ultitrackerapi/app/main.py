@@ -5,7 +5,9 @@ import datetime
 import os
 import tempfile
 import time
-import ultitrackerapi
+
+# # initialize ultitracker
+# import ultitrackerapi
 
 from fastapi import Depends, FastAPI, HTTPException, File, Form, UploadFile
 from fastapi.security import OAuth2PasswordRequestForm
@@ -61,6 +63,7 @@ async def login_for_access_token(
             detail="Incorrect username or password",
             headers={"WWW-Authenticate": "Bearer"},
         )
+
     access_token = auth.construct_jwt(username=user.username)
 
     response = Response()
@@ -76,14 +79,14 @@ async def login_for_access_token(
 @app.post("/add_user")
 async def add_user(userform: models.UserForm = Depends()):
     salted_password = auth.get_password_hash(userform.password)
-    user = models.UserInDB(
+    user = models.User(
         username=auth.sanitize_for_html(userform.username),
-        salted_password=salted_password,
         email=auth.sanitize_for_html(userform.email),
         full_name=auth.sanitize_for_html(userform.full_name),
     )
 
-    is_success = backend_instance.add_user(user)
+    is_success = backend_instance.add_user(
+        user, salted_password=salted_password)
 
     if is_success:
         return is_success

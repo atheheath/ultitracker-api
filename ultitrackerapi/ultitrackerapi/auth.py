@@ -89,9 +89,9 @@ async def get_user_from_cookie(token: str = Depends(oauth2_scheme)):
 def authenticate_user(username: str, password: str) -> models.UserInDBwPass:
     user = backend_instance.get_user(username=username, include_password=True)
     if not user:
-        return False
+        return
 
     if not verify_password(password, user.salted_password):
-        return False
+        return
 
     return user
