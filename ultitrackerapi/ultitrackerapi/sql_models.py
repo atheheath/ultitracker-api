@@ -55,7 +55,7 @@ TableGameMetadata = models.Table(
         """
         CREATE TABLE {full_name} (
             game_id TEXT,
-            data JSON NOT NULL,
+            data JSONB NOT NULL,
             thumbnail_key TEXT,
             video_key TEXT,
             PRIMARY KEY (game_id)
@@ -88,8 +88,8 @@ TableAuthorizationScheme = models.Table(
 TableImgLocation = models.Table(
     table_name="img_location",
     schema_name=POSTGRES_SCHEMA,
-    columns=["img_id", "img_raw_path", "img_type", "img_metadata", "game_id"],
-    column_types=[str, str, models.ImgEncoding, dict, str],
+    columns=["img_id", "img_raw_path", "img_type", "img_metadata", "game_id", "frame_number"],
+    column_types=[str, str, models.ImgEncoding, dict, str, int],
     create_commands=[
         """
         CREATE TYPE img_encoding AS ENUM('jpeg', 'png', 'tiff')
@@ -99,8 +99,9 @@ TableImgLocation = models.Table(
             img_id TEXT,
             img_raw_path TEXT NOT NULL,
             img_type img_encoding NOT NULL,
-            img_metadata JSON NOT NULL,
+            img_metadata JSONB NOT NULL,
             game_id TEXT REFERENCES {game_metadata_full_name}(game_id),
+            frame_number INTEGER,
             PRIMARY KEY (img_id)
         )
         """.format(
@@ -171,30 +172,33 @@ TableGameplayState = models.Table(
     ],
 )
 
-TableAnnotationStatus = models.Table(
-    table_name="annotation_status",
+TableAnnotationTransaction = models.Table(
+    table_name="annotation_transaction",
     schema_name=POSTGRES_SCHEMA,
     columns=[
         "img_id",
-        "is_out_for_annotation",
-        "is_out_for_annotation_time",
-        "is_out_for_annotatino_table",
+        "timestamp",
+        "table_ref",
+        "action"
     ],
-    column_types=[str, bool, datetime.datetime, models.AnnotationTable],
+    column_types=[str, datetime.datetime, models.AnnotationTable, models.AnnotationAction],
     create_commands=[
         """
         CREATE TYPE annotation_table AS ENUM ('player_bbox', 'field_lines', 'gameplay_state')
         """,
         """
+        CREATE TYPE annotation_action AS ENUM ('sent', 'submitted')
+        """,
+        """
         CREATE TABLE {full_name}(
             img_id TEXT REFERENCES {img_location_full_name}(img_id),
-            is_out_for_annotation BOOL NOT NULL,
-            is_out_for_annotation_time TIMESTAMP,
-            is_out_for_annotation_table annotation_table,
-            PRIMARY KEY (img_id, is_out_for_annotation_time, is_out_for_annotation_table)
+            timestamp TIMESTAMP,
+            table_ref annotation_table,
+            action annotation_action,
+            PRIMARY KEY (img_id, timestamp, table_ref)
         )
         """.format(
-            full_name=models.Table.construct_full_name(POSTGRES_SCHEMA, "annotation_status"),
+            full_name=models.Table.construct_full_name(POSTGRES_SCHEMA, "annotation_transaction"),
             img_location_full_name=TableImgLocation.full_name
         ),
     ],
@@ -209,7 +213,7 @@ TableAnnotationStatus = models.Table(
 #             TablePlayerBbox,
 #             TableFieldLines,
 #             TableGameplayState,
-#             TableAnnotationStatus,
+#             TableAnnotationAction,
 #             TableGameMetadata,
 #             TableUsers,
 #             TableAuthorizationScheme,

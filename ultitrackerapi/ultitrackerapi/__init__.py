@@ -9,6 +9,9 @@ POSTGRES_PORT = os.getenv("POSTGRES_PORT")
 POSTGRES_SCHEMA = os.getenv("POSTGRES_SCHEMA")
 NUM_CONNECTION_RETRIES = 5
 
+ANNOTATION_EXPIRATION_DURATION = 10
+NUM_IMAGES_FOR_ANNOTATION = 5
+
 
 def get_logger(name, level=logging.INFO):
     # create logger

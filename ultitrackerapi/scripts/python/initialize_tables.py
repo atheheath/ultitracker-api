@@ -23,7 +23,7 @@ def initialize_tables(client: sql_backend.SQLClient):
         sql_models.TablePlayerBbox,
         sql_models.TableFieldLines,
         sql_models.TableGameplayState,
-        sql_models.TableAnnotationStatus,
+        sql_models.TableAnnotationTransaction,
     ]
     for table in initialization_order:
         # try to initialize tables if not made yet

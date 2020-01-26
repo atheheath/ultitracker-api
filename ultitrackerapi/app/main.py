@@ -1,10 +1,12 @@
 """API Definitions for ultitracker."""
 # import boto3
-import datetime
+# import datetime
 # import logging
 import os
+import subprocess
 import tempfile
 import time
+import uuid
 
 # # initialize ultitracker
 # import ultitrackerapi
@@ -18,7 +20,7 @@ from starlette.responses import Response
 from starlette.status import HTTP_401_UNAUTHORIZED, HTTP_404_NOT_FOUND
 from typing import Optional
 
-from ultitrackerapi import auth, get_backend, get_s3Client, models, video
+from ultitrackerapi import auth, get_backend, get_logger, get_s3Client, models, video
 
 CORS_ORIGINS = ["http://localhost:3000"]
 
@@ -47,6 +49,7 @@ app.add_middleware(
 
 backend_instance = get_backend()
 s3Client = get_s3Client()
+logger = get_logger(__name__, "DEBUG")
 
 
 @app.post("/token")
@@ -146,47 +149,49 @@ async def upload_file(
     away: str = Form(...),
     date: str = Form(...),
 ):
-    _, new_filename = tempfile.mkstemp()
-    print("New filename: {}".format(new_filename))
-    print("home, away, date: {}, {}, {}".format(home, away, date))
+    _, local_video_filename = tempfile.mkstemp()
+    game_id = str(uuid.uuid4())
+
+    logger.debug("Local video filename: {}".format(local_video_filename))
+    logger.debug("home, away, date: {}, {}, {}".format(home, away, date))
+    logger.debug("game_id: {}".format(game_id))
+    
     time.sleep(0.1)
 
     chunk_size = 10000
-    with open(new_filename, "wb") as f:
+    with open(local_video_filename, "wb") as f:
         for chunk in iter(lambda: upload_file.file.read(chunk_size), b""):
             f.write(chunk)
 
-    thumbnail_name = new_filename + "_thumbnail.jpg"
-    video.get_thumbnail(new_filename, thumbnail_name)
-    video_length = str(
-        datetime.timedelta(seconds=int(video.get_video_duration(new_filename)))
-    )
+    thumbnail_filename = local_video_filename + "_thumbnail.jpg"
 
-    s3Client.upload_file(
-        new_filename, "ultitracker-videos-test", os.path.basename(new_filename)
-    )
-
-    s3Client.upload_file(
-        thumbnail_name, 
-        "ultitracker-videos-test", 
-        os.path.basename(thumbnail_name)
-    )
-
-    os.remove(new_filename)
-    os.remove(thumbnail_name)
+    bucket = "ultitracker-videos-test"
+    video_key = os.path.basename(local_video_filename)
+    thumbnail_key = os.path.basename(thumbnail_filename)
+    
+    subprocess.Popen([
+        "python", "-m", 
+        "ultitrackerapi.extract_and_upload_video",
+        bucket,
+        local_video_filename,
+        thumbnail_filename,
+        video_key,
+        thumbnail_key,
+        game_id
+    ])
 
     backend_instance.add_game(
         current_user,
-        game_id=os.path.basename(new_filename),
-        thumbnail_key=os.path.basename(thumbnail_name),
-        video_key=os.path.basename(new_filename),
+        game_id=game_id,
+        thumbnail_key=thumbnail_key,
+        video_key=video_key,
         data={
             "name": name,
             "home": home,
             "away": away,
             "date": date,
-            "bucket": "ultitracker-videos-test",
-            "length": video_length,
+            "bucket": bucket,
+            # "length": video_length,
         },
     )
 

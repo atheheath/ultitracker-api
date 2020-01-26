@@ -176,6 +176,11 @@ class AnnotationTable(Enum):
     gameplay_state = 2
 
 
+class AnnotationAction(Enum):
+    sent = 0
+    submitted = 1
+
+    
 class Database(BaseModel):
     name: str
     tables: Set[Table]
