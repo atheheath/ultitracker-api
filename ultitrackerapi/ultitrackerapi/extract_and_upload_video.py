@@ -116,7 +116,6 @@ def extract_and_upload_video(
             )
     logger.debug("extract_and_upload_video: Finished uploading frames")
 
-
     logger.debug("extract_and_upload_video: Inserting image metadata")
     raw_paths = [
         posixpath.join(video_key + "_frames", frame) 
