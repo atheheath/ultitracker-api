@@ -1,0 +1,20 @@
+version: '3'
+
+services: 
+    ultitrackerapi:
+        build:
+        # env_file: ./database.env
+        # volumes:
+        #   - ./src:/usr/src/app
+            context: .
+            dockerfile: dev.dockerfile
+        image: ultitrackerapi-dev
+        env_file: ./config/dev.env
+        ports:
+            - ${SERVER_API_PORT}:${SERVER_API_PORT}
+    database:
+        image: postgres:11.1
+        ports:
+            - 5432:5432
+        # restart: always
+        # env_file: ./database.env

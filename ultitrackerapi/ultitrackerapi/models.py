@@ -1,6 +1,7 @@
+from enum import Enum
 from fastapi import Form
-from pydantic import BaseModel
-from typing import List
+from pydantic import BaseConfig, BaseModel, Field
+from typing import Dict, List, Optional, Set, Type
 
 ALGORITHM = "HS256"
 
@@ -28,6 +29,10 @@ class User(BaseModel):
 
 
 class UserInDB(User):
+    user_id: str
+
+
+class UserInDBwPass(UserInDB):
     salted_password: str
 
 
@@ -52,3 +57,130 @@ class Token(BaseModel):
 
 class TokenData(BaseModel):
     username: str = None
+
+
+class Game(BaseModel):
+    authorized_users: List[str]
+    data: Dict
+    game_id: str
+
+
+class GameResponse(BaseModel):
+    data: Dict
+    game_id: str
+    thumbnail_key: str
+    video_key: str
+
+    def __init__(self, *args, **kwargs):
+
+        # put this import here to not mess with import orders
+        from ultitrackerapi import get_s3Client
+        s3Client = get_s3Client()
+
+        super().__init__(*args, **kwargs)
+        
+        if len(self.data) != 0:
+            self.data["thumbnail"] = s3Client.generate_presigned_url(
+                "get_object",
+                Params={
+                    "Bucket": self.data["bucket"],
+                    "Key": self.thumbnail_key,
+                },
+                ExpiresIn=10,
+            )
+
+            self.data["video"] = s3Client.generate_presigned_url(
+                "get_object",
+                Params={
+                    "Bucket": self.data["bucket"],
+                    "Key": self.video_key
+                },
+                ExpiresIn=60 * 60 * 2,
+            )
+
+
+class GameList(BaseModel):
+    game_list: List[Game]
+
+    def add_game(self, game: Game):
+        self.game_list.append(game)
+
+
+class GameListResponse(BaseModel):
+    game_list: List[GameResponse]
+
+
+class ArbitraryModelConfig(BaseConfig):
+    arbitrary_types_allowed = True
+
+
+class Table(BaseModel):
+    # Want to allow Type for column_types, so we need
+    # to allow aribitrary types for pydantic
+    Config = ArbitraryModelConfig
+    table_name: str
+    schema_name: str
+    columns: List[str]
+    column_types: List[Type]
+    create_commands: List[str]
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+
+        if len(self.columns) != len(self.column_types):
+            raise ValueError("columns and column_types must have the same length")
+
+    @staticmethod
+    def construct_full_name(schema_name, table_name):
+        return ".".join([schema_name, table_name])
+
+    @property
+    def full_name(self):
+        return self.construct_full_name(self.schema_name, self.table_name)
+
+
+class ImgEncoding(Enum):
+    jpeg = 0
+    png = 1
+    tiff = 2
+
+
+class Box(BaseModel):
+    x1: int
+    y1: int
+    x2: int
+    y2: int
+    player_id: Optional[str]
+
+
+class LineId(Enum):
+    top_sideline = 0
+    left_back_endzone = 1
+    left_front_endzone = 2
+    right_front_endzone = 3
+    right_back_endzone = 4
+    bottom_sideline = 5
+
+
+class LineSegment(BaseModel):
+    x1: int
+    y1: int
+    x2: int
+    y2: int
+    line_id: LineId
+
+
+class AnnotationTable(Enum):
+    player_bbox = 0
+    field_lines = 1
+    gameplay_state = 2
+
+
+class AnnotationAction(Enum):
+    sent = 0
+    submitted = 1
+
+    
+class Database(BaseModel):
+    name: str
+    tables: Set[Table]
