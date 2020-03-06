@@ -3,6 +3,7 @@
 # import datetime
 # import logging
 import os
+import posixpath
 import subprocess
 import tempfile
 import time
@@ -18,9 +19,9 @@ from starlette.middleware.cors import CORSMiddleware
 from starlette.responses import Response
 # from starlette.responses import FileResponse, Response, RedirectResponse
 from starlette.status import HTTP_401_UNAUTHORIZED, HTTP_404_NOT_FOUND
-from typing import Optional
+from typing import List, Optional
 
-from ultitrackerapi import auth, get_backend, get_logger, get_s3Client, models, video
+from ultitrackerapi import annotator_queue, auth, get_backend, get_logger, get_s3Client, models, video
 
 CORS_ORIGINS = ["http://localhost:3000"]
 
@@ -166,8 +167,8 @@ async def upload_file(
     thumbnail_filename = local_video_filename + "_thumbnail.jpg"
 
     bucket = "ultitracker-videos-test"
-    video_key = os.path.basename(local_video_filename)
-    thumbnail_key = os.path.basename(thumbnail_filename)
+    video_key = posixpath.join(game_id, "video.mp4")
+    thumbnail_key = posixpath.join(game_id, "thumbnail.jpg")
     
     subprocess.Popen([
         "python", "-m", 
@@ -196,3 +197,57 @@ async def upload_file(
     )
 
     return {"finished": True}
+
+
+@app.post("/annotator/get_images_to_annotate", response_model=models.ImgLocationListResponse)
+async def get_images_to_annotate(
+    current_user: models.User = Depends(auth.get_user_from_cookie),
+    game_ids: str = Form(...),
+    annotation_type: str = Form(...),
+    order_type: str = Form(...)
+):
+    queue_params = annotator_queue.AnnotatorQueueParams(
+        game_ids=game_ids.split(),
+        annotation_type=models.AnnotationTable[annotation_type],
+        order_type=annotator_queue.AnnotationOrderType[order_type]
+    )
+
+    images = annotator_queue.get_next_n_images(
+        backend=backend_instance, 
+        queue_params=queue_params
+    )
+
+    return images
+
+
+@app.post("/annotator/insert_annotation")
+async def insert_annotation(
+    img_id: str,
+    annotation_table: str,
+    annotation: dict,
+    current_user: models.User = Depends(auth.get_user_from_cookie),
+):
+    try:
+        backend_instance.insert_annotation(
+            user=current_user,
+            img_id=img_id,
+            annotation_table=models.AnnotationTable[annotation_table],
+            annotation_data=annotation
+        )
+    except Exception as e:
+        logger.error(
+            "Error with payload. "
+            "img_id: {}, "
+            "annotation_table: {}, "
+            "annotation: {}, "
+            "current_user: {}".format(
+                img_id, 
+                annotation_table,
+                annotation,
+                current_user
+            )
+        )
+        raise e
+
+    return True
+

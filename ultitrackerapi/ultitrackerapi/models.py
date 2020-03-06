@@ -1,9 +1,16 @@
+import datetime 
+import posixpath 
+
 from enum import Enum
 from fastapi import Form
-from pydantic import BaseConfig, BaseModel, Field
+from pydantic import BaseConfig, BaseModel
 from typing import Dict, List, Optional, Set, Type
+from ultitrackerapi import ANNOTATION_EXPIRATION_DURATION, get_logger
 
 ALGORITHM = "HS256"
+
+
+logger = get_logger(__name__)
 
 
 # NOTE: Header and Payload information is readable by everyone
@@ -97,8 +104,7 @@ class GameResponse(BaseModel):
                 },
                 ExpiresIn=60 * 60 * 2,
             )
-
-
+    
 class GameList(BaseModel):
     game_list: List[Game]
 
@@ -153,6 +159,10 @@ class Box(BaseModel):
     player_id: Optional[str]
 
 
+class PlayerBbox(Box):
+    player_id: Optional[str]
+
+
 class LineId(Enum):
     top_sideline = 0
     left_back_endzone = 1
@@ -163,11 +173,69 @@ class LineId(Enum):
 
 
 class LineSegment(BaseModel):
-    x1: int
-    y1: int
-    x2: int
-    y2: int
+    x1: float
+    y1: float
+    x2: float
+    y2: float
     line_id: LineId
+
+
+class ImgLocation(BaseModel):
+    img_id: str
+    img_raw_path: str
+    img_type: ImgEncoding
+    img_metadata: dict
+    game_id: Optional[str]
+    frame_number: Optional[int]
+
+
+def parse_bucket_key_from_url(url):
+    stripped_url = url.split("//")[1]
+    if url[:4] == "http":
+        bucket = stripped_url.split(".")[0]
+        key = posixpath.sep.join(stripped_url.split("?")[0].split(posixpath.sep)[1:])
+    elif url[:5] == "s3://":
+        bucket = stripped_url.split(posixpath.sep)[0]
+        key = posixpath.sep.join(stripped_url.split(posixpath.sep)[1:])
+    else:
+        raise ValueError("Invalid url passed")
+
+    return bucket, key
+
+
+def is_not_presigned_url(url):
+    if url[:4] == "http" and "?AWSAccessKeyId" in url and "&Expires=" in url:
+        return False
+
+    return True
+    
+class ImgLocationResponse(BaseModel):
+    img_id: str
+    img_path: str
+    annotation_expiration_utc_time: datetime.datetime
+
+    def __init__(self, *args, **kwargs):
+
+        # put this import here to not mess with import orders
+        from ultitrackerapi import get_s3Client
+        s3Client = get_s3Client()
+
+        super().__init__(*args, **kwargs)
+
+        if is_not_presigned_url(self.img_path):
+            bucket, key = parse_bucket_key_from_url(self.img_path)
+            self.img_path = s3Client.generate_presigned_url(
+                "get_object",
+                Params={
+                    "Bucket": bucket,
+                    "Key": key,
+                },
+                ExpiresIn=ANNOTATION_EXPIRATION_DURATION,
+            )
+
+
+class ImgLocationListResponse(BaseModel):
+    img_locations: List[ImgLocationResponse]
 
 
 class AnnotationTable(Enum):
@@ -180,7 +248,33 @@ class AnnotationAction(Enum):
     sent = 0
     submitted = 1
 
-    
+
+class Annotation(BaseModel):
+    img_id: str
+
+    @staticmethod
+    def construct_full_name(schema_name, table_name):
+        return ".".join([schema_name, table_name])
+
+    @property
+    def full_name(self):
+        return self.construct_full_name(self.schema_name, self.table_name)
+
+
+class AnnotationPlayerBboxes(Annotation):
+    bboxes: List[PlayerBbox]
+
+
+class AnnotationFieldLines(Annotation):
+    img_id: str
+    line_coords: List[LineSegment]
+
+
+class AnnotationGameplayState(Annotation):
+    img_id: str
+    is_valid: bool
+
+
 class Database(BaseModel):
     name: str
     tables: Set[Table]

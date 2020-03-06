@@ -96,7 +96,7 @@ TableImgLocation = models.Table(
         """,
         """
         CREATE TABLE {full_name} (
-            img_id TEXT,
+            img_id TEXT NOT NULL,
             img_raw_path TEXT NOT NULL,
             img_type img_encoding NOT NULL,
             img_metadata JSONB NOT NULL,
@@ -205,8 +205,8 @@ TableAnnotationTransaction = models.Table(
 )
 
 
-# DB = models.Database(
-#     table_name="ultitracker",
+# vizdb = models.Database(
+#     name="ultitracker",
 #     tables=set(
 #         [
 #             TableImgLocation,

@@ -39,6 +39,7 @@ def construct_jwt(username: str) -> str:
         exp=(datetime.utcnow() + EXP_LENGTH).timestamp(),
         iat=datetime.utcnow().timestamp(),
         sub=username,
+        nbf=datetime.utcnow().timestamp(),
     ).dict()
 
     encoded_bytes_token = jwt.encode(
