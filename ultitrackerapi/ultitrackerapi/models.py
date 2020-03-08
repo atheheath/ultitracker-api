@@ -241,7 +241,7 @@ class ImgLocationListResponse(BaseModel):
 class AnnotationTable(Enum):
     player_bbox = 0
     field_lines = 1
-    gameplay_state = 2
+    camera_angle = 2
 
 
 class AnnotationAction(Enum):
@@ -270,7 +270,7 @@ class AnnotationFieldLines(Annotation):
     line_coords: List[LineSegment]
 
 
-class AnnotationGameplayState(Annotation):
+class AnnotationCameraAngle(Annotation):
     img_id: str
     is_valid: bool
 

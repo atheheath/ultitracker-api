@@ -151,7 +151,7 @@ def annotation_to_sql_values(annotation: models.Annotation):
 
         return values_string
 
-    elif isinstance(annotation, models.AnnotationGameplayState):
+    elif isinstance(annotation, models.AnnotationCameraAngle):
         return "('{img_id}', '{is_valid}')".format(
             img_id=annotation.img_id, is_valid=annotation.is_valid
         )
@@ -376,9 +376,9 @@ class SQLBackend(backend.Backend):
                 ]
             )
 
-        elif annotation_table == models.AnnotationTable.gameplay_state:
-            table = sql_models.TableGameplayState
-            model = models.AnnotationGameplayState(**annotation_data)
+        elif annotation_table == models.AnnotationTable.camera_angle:
+            table = sql_models.TableCameraAngle
+            model = models.AnnotationCameraAngle(**annotation_data)
 
         else:
             raise ValueError("Invalid annotation_table: {}".format(annotation_table))

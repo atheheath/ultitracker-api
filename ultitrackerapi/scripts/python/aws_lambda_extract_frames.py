@@ -12,11 +12,11 @@ import tempfile
 from concurrent.futures import ThreadPoolExecutor
 
 
-def extract_frames(in_filename, out_directory, fps=1):
+def extract_frames(in_filename, out_directory, fps=1, height=720):
     print("\n\n\n{}\n\n\n".format(os.listdir("./")))
     (
         ffmpeg.input(in_filename)
-        .filter("scale", 720, -1)
+        .filter("scale", height, -1)
         .filter("fps", fps)
         .output(
             os.path.join(out_directory, "frame_%06d.png"),
@@ -38,6 +38,7 @@ def handler(event, context):
     s3_bucket_path = event["s3_bucket_path"]
     s3_video_path = event["s3_video_path"]
     s3_output_frames_path = event["s3_output_frames_path"]
+    video_metadata = event["video_metadata"]
     num_parallel_upload_threads = event.get("num_parallel_upload_threads", 4)
     logging_level = event.get("logging_level", "INFO")
 
@@ -63,7 +64,7 @@ def handler(event, context):
     logger.info("Finished downloading file")
 
     logger.info("Extracting frames")
-    extract_frames(download_filename, frames_out_directory)
+    extract_frames(download_filename, frames_out_directory, height=video_metadata["height"])
     logger.info("Finished extracting frames")
 
     frames_info = []

@@ -60,9 +60,9 @@ def get_next_n_images(
             AND action = 'submitted'
             AND table_ref = '{table_ref}'
     ),
-    images_with_gameplay_state AS (
+    images_with_camera_angle AS (
         SELECT DISTINCT img_id
-        FROM ultitracker.gameplay_state
+        FROM ultitracker.camera_angle
         WHERE 1=1
             AND is_valid = true
     ),
@@ -98,7 +98,7 @@ def get_next_n_images(
             '{table_ref}' AS table_ref,
             'sent' AS action
         FROM ultitracker.img_location A
-        {join_gameplay_state}
+        {join_camera_angle}
         LEFT JOIN unavailable_images B ON A.img_id = B.img_id
         WHERE 1=1
             AND B.img_id IS NULL
@@ -118,7 +118,7 @@ def get_next_n_images(
         table_ref=queue_params.annotation_type.name,
         expiration_duration=ultitrackerapi.ANNOTATION_EXPIRATION_DURATION,
         num_images=ultitrackerapi.NUM_IMAGES_FOR_ANNOTATION,
-        join_gameplay_state="JOIN images_with_gameplay_state C ON A.img_id = C.img_id" if queue_params.annotation_type.name != models.AnnotationTable.gameplay_state.name else "",
+        join_camera_angle="JOIN images_with_camera_angle C ON A.img_id = C.img_id" if queue_params.annotation_type.name != models.AnnotationTable.camera_angle.name else "",
         game_ids="(" + ", ".join(["'" + game_id + "'" for game_id in queue_params.game_ids]) + ")",
         order_by="ORDER BY A.frame_number" if queue_params.order_type == AnnotationOrderType.sequential else "ORDER BY RANDOM()"
     )

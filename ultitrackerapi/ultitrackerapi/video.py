@@ -17,6 +17,20 @@ def get_video_duration(in_filename):
     return float(ffmpeg.probe(in_filename)["streams"][0]["duration"])
 
 
+def get_video_height_width(in_filename):
+    stream_info = ffmpeg.probe(in_filename)["streams"][0]
+    return {
+        "height": stream_info["height"],
+        "width": stream_info["width"]
+    }
+
+
+def get_video_fps(in_filename):
+    stream_info = ffmpeg.probe(in_filename)["streams"][0]
+    numerator, denominator = stream_info["r_frame_rate"].split("/")
+    return float(int(numerator)) / int(denominator)
+
+
 def extract_frames(in_filename, out_directory, fps=1):
     (
         ffmpeg.input(in_filename)

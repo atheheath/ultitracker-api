@@ -22,7 +22,7 @@ def initialize_tables(client: sql_backend.SQLClient):
         sql_models.TableImgLocation,
         sql_models.TablePlayerBbox,
         sql_models.TableFieldLines,
-        sql_models.TableGameplayState,
+        sql_models.TableCameraAngle,
         sql_models.TableAnnotationTransaction,
     ]
     for table in initialization_order:

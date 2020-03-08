@@ -71,17 +71,20 @@ def extract_and_upload_video(
     game_id
 ):
     logger.debug("extract_and_upload_video: Getting video length")
-    video_length = str(
-        datetime.timedelta(seconds=int(video.get_video_duration(video_filename)))
-    )
+    video_length_seconds = int(video.get_video_duration(video_filename))
+    video_length = str(datetime.timedelta(seconds=video_length_seconds))
     logger.debug("extract_and_upload_video: Finished getting video length")
+
+    logger.debug("extract_and_upload_video: Getting video height and width")
+    video_height_width = video.get_video_height_width(video_filename)
+    logger.debug("extract_and_upload_video: Finished getting height and width")
 
     logger.debug("extract_and_upload_video: Updating length in db")
     update_game_video_length(game_id, video_length)
     logger.debug("extract_and_upload_video: Finished updating length in db")
     
     logger.debug("extract_and_upload_video: Extracting thumbnail")
-    video.get_thumbnail(video_filename, thumbnail_filename)
+    video.get_thumbnail(video_filename, thumbnail_filename, time=video_length_seconds // 2)
     logger.debug("extract_and_upload_video: Finished extracting thumbnail")
 
     logger.debug("extract_and_upload_video: Uploading thumbnail")
@@ -126,7 +129,8 @@ def extract_and_upload_video(
         json.dumps({
             "s3_bucket_path": "ultitracker-videos-test",
             "s3_video_path": posixpath.join(posixpath.dirname(video_key), "chunks", basename),
-            "s3_output_frames_path": posixpath.join(posixpath.dirname(video_key), "frames", posixpath.splitext(basename)[0])
+            "s3_output_frames_path": posixpath.join(posixpath.dirname(video_key), "frames", posixpath.splitext(basename)[0]),
+            "video_metadata": video_height_width
         }).encode()
         for basename in os.listdir(chunked_video_dir)
     ]
