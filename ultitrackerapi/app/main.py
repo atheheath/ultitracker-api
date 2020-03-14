@@ -9,15 +9,11 @@ import tempfile
 import time
 import uuid
 
-# # initialize ultitracker
-# import ultitrackerapi
-
 from fastapi import Cookie, Depends, FastAPI, HTTPException, File, Form, UploadFile
 from fastapi.security import OAuth2PasswordRequestForm
 from starlette.middleware.cors import CORSMiddleware
 from starlette.requests import Request
 from starlette.responses import Response
-# from starlette.responses import FileResponse, Response, RedirectResponse
 from starlette.status import HTTP_401_UNAUTHORIZED, HTTP_404_NOT_FOUND
 from typing import List, Optional
 

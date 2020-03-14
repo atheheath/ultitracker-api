@@ -154,11 +154,6 @@ def extract_and_upload_video(
         for result_future in futures.as_completed(result_futures):
             aws_lambda_response = json.loads(result_future.result()["Payload"].read().decode("utf-8"))
             aws_lambda_responses.append(aws_lambda_response)
-            
-            # raw_paths = [
-            #     aws_lambda_response["zipped_tar_archive"]
-            #     for frame in aws_lambda_response["frames"]
-            # ]
 
             raw_paths = ["s3://" + posixpath.join(frame["bucket"], frame["key"]) for frame in aws_lambda_response["frames"]]
 
@@ -167,7 +162,7 @@ def extract_and_upload_video(
                 {"bucket": bucket}
                 for frame in aws_lambda_response["frames"]
             ]
-            # frame_numbers = [get_frame_number(frame["key"]) for frame in aws_lambda_response["frames"]]
+
             frame_numbers = [-1 for frame in aws_lambda_response["frames"]]
 
             insert_images(
@@ -179,36 +174,6 @@ def extract_and_upload_video(
             )
 
     logger.debug("extract_and_upload_video: Received all lambda responses")
-
-    # logger.debug(f"lambda responses: {list(aws_lambda_responses)}")
-    # aws_lambda_responses = [json.loads(x) for x in aws_lambda_responses]
-
-    # logger.debug("extract_and_upload_video: Extracting frames")
-    # tempdir = tempfile.mkdtemp()
-    # video.extract_frames(video_filename, tempdir)
-    # logger.debug("extract_and_upload_video: Finished extracting frames")
-    
-    # def get_frame_number_from_filename(filename):
-    #     return int(os.path.splitext(filename)[0].split("_")[-1])
-
-    # def get_frames(directory):
-    #     return sorted(os.listdir(tempdir), key=get_frame_number_from_filename)
-
-    # logger.debug("extract_and_upload_video: Uploading frames")
-    # with futures.ThreadPoolExecutor(8) as ex:
-    #     for frame in os.listdir(tempdir):
-    #         ex.submit(
-    #             s3Client.upload_file,
-    #             os.path.join(tempdir, frame),
-    #             bucket,
-    #             posixpath.join(
-    #                 video_key + "_frames",
-    #                 frame
-    #             )
-    #         )
-    # logger.debug("extract_and_upload_video: Finished uploading frames")
-
-    # logger.debug("extract_and_upload_video: Inserting image metadata")
 
 
     logger.debug("extract_and_upload_video: Finished inserting image metadata")

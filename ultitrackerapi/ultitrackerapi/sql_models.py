@@ -203,20 +203,3 @@ TableAnnotationTransaction = models.Table(
         ),
     ],
 )
-
-
-# vizdb = models.Database(
-#     name="ultitracker",
-#     tables=set(
-#         [
-#             TableImgLocation,
-#             TablePlayerBbox,
-#             TableFieldLines,
-#             TableCameraAngle,
-#             TableAnnotationAction,
-#             TableGameMetadata,
-#             TableUsers,
-#             TableAuthorizationScheme,
-#         ]
-#     ),
-# )

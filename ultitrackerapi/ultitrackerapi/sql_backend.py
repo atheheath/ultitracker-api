@@ -1,11 +1,7 @@
-# import boto3
 import datetime
 import json
 import uuid
 
-# from enum import Enum
-# from pydantic import BaseConfig, BaseModel
-# from typing import Dict, Set, Type, Optional
 from typing import List
 from ultitrackerapi import backend, get_s3Client, models, sql_models
 
@@ -177,7 +173,6 @@ class SQLBackend(backend.Backend):
 
         result = self.client.execute(command)
         logger.debug("SQLBackend.get_user result: {}".format(result))
-
         if include_password:
             model = models.UserInDBwPass
         else:
