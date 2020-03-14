@@ -12,21 +12,25 @@ import uuid
 # # initialize ultitracker
 # import ultitrackerapi
 
-from fastapi import Depends, FastAPI, HTTPException, File, Form, UploadFile
+from fastapi import Cookie, Depends, FastAPI, HTTPException, File, Form, UploadFile
 from fastapi.security import OAuth2PasswordRequestForm
 from starlette.middleware.cors import CORSMiddleware
-# from starlette.requests import Request
+from starlette.requests import Request
 from starlette.responses import Response
 # from starlette.responses import FileResponse, Response, RedirectResponse
 from starlette.status import HTTP_401_UNAUTHORIZED, HTTP_404_NOT_FOUND
 from typing import List, Optional
 
-from ultitrackerapi import annotator_queue, auth, get_backend, get_logger, get_s3Client, models, video
-
-CORS_ORIGINS = ["http://localhost:3000"]
+from ultitrackerapi import annotator_queue, auth, CORS_ORIGINS, get_backend, get_logger, get_s3Client, models, video
 
 # sleep just to make sure the above happened
 time.sleep(1)
+
+backend_instance = get_backend()
+s3Client = get_s3Client()
+logger = get_logger(__name__, "DEBUG")
+
+logger.info("CORS_ORIGINS: {}".format(CORS_ORIGINS))
 
 app = FastAPI()
 
@@ -38,20 +42,10 @@ app.add_middleware(
     allow_credentials=True,
     allow_headers=["*"],
     expose_headers=[""]
-    # allow_origins=origins
-    # allow_origins=origins,
-    # allow_credentials=True,
-    # allow_methods=["POST"],
-    # allow_headers=["*"],
 )
 
 # # start s3 client
 # s3Client = boto3.client("s3")
-
-backend_instance = get_backend()
-s3Client = get_s3Client()
-logger = get_logger(__name__, "DEBUG")
-
 
 @app.post("/token")
 async def login_for_access_token(
@@ -76,6 +70,19 @@ async def login_for_access_token(
         key="ultitracker-api-access-token",
         value=access_token,
         expires=auth.EXP_LENGTH.total_seconds(),
+    )
+    return response
+
+
+@app.post("/logout")
+async def logout_from_token(
+    user: models.User = Depends(auth.get_user_from_cookie)
+):
+    response = Response()
+    response.set_cookie(
+        key="ultitracker-api-access-token",
+        value="",
+        expires=-1
     )
     return response
 
@@ -170,6 +177,7 @@ async def upload_file(
     video_key = posixpath.join(game_id, "video.mp4")
     thumbnail_key = posixpath.join(game_id, "thumbnail.jpg")
     
+    logger.info("Submitting extract video job")
     subprocess.Popen([
         "python", "-m", 
         "ultitrackerapi.extract_and_upload_video",
@@ -181,6 +189,7 @@ async def upload_file(
         game_id
     ])
 
+    logger.info("Adding game to DB")
     backend_instance.add_game(
         current_user,
         game_id=game_id,
@@ -250,4 +259,3 @@ async def insert_annotation(
         raise e
 
     return True
-

@@ -12,6 +12,8 @@ NUM_CONNECTION_RETRIES = 5
 ANNOTATION_EXPIRATION_DURATION = 10
 NUM_IMAGES_FOR_ANNOTATION = 1
 
+CORS_ORIGINS = os.getenv("CORS_ORIGINS").split(",")
+
 
 def get_logger(name, level=logging.INFO):
     # create logger
