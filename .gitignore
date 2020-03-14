@@ -1,3 +1,7 @@
 .vscode/*
 config/*
 *.pyc
+letsencrypt/
+.python-version
+**/.vscode
+*.zip

@@ -3,29 +3,30 @@
 # import datetime
 # import logging
 import os
+import posixpath
 import subprocess
 import tempfile
 import time
 import uuid
 
-# # initialize ultitracker
-# import ultitrackerapi
-
-from fastapi import Depends, FastAPI, HTTPException, File, Form, UploadFile
+from fastapi import Cookie, Depends, FastAPI, HTTPException, File, Form, UploadFile
 from fastapi.security import OAuth2PasswordRequestForm
 from starlette.middleware.cors import CORSMiddleware
-# from starlette.requests import Request
+from starlette.requests import Request
 from starlette.responses import Response
-# from starlette.responses import FileResponse, Response, RedirectResponse
 from starlette.status import HTTP_401_UNAUTHORIZED, HTTP_404_NOT_FOUND
-from typing import Optional
+from typing import List, Optional
 
-from ultitrackerapi import auth, get_backend, get_logger, get_s3Client, models, video
-
-CORS_ORIGINS = ["http://localhost:3000"]
+from ultitrackerapi import annotator_queue, auth, CORS_ORIGINS, get_backend, get_logger, get_s3Client, models, video
 
 # sleep just to make sure the above happened
 time.sleep(1)
+
+backend_instance = get_backend()
+s3Client = get_s3Client()
+logger = get_logger(__name__, "DEBUG")
+
+logger.info("CORS_ORIGINS: {}".format(CORS_ORIGINS))
 
 app = FastAPI()
 
@@ -37,20 +38,10 @@ app.add_middleware(
     allow_credentials=True,
     allow_headers=["*"],
     expose_headers=[""]
-    # allow_origins=origins
-    # allow_origins=origins,
-    # allow_credentials=True,
-    # allow_methods=["POST"],
-    # allow_headers=["*"],
 )
 
 # # start s3 client
 # s3Client = boto3.client("s3")
-
-backend_instance = get_backend()
-s3Client = get_s3Client()
-logger = get_logger(__name__, "DEBUG")
-
 
 @app.post("/token")
 async def login_for_access_token(
@@ -75,6 +66,19 @@ async def login_for_access_token(
         key="ultitracker-api-access-token",
         value=access_token,
         expires=auth.EXP_LENGTH.total_seconds(),
+    )
+    return response
+
+
+@app.post("/logout")
+async def logout_from_token(
+    user: models.User = Depends(auth.get_user_from_cookie)
+):
+    response = Response()
+    response.set_cookie(
+        key="ultitracker-api-access-token",
+        value="",
+        expires=-1
     )
     return response
 
@@ -166,9 +170,10 @@ async def upload_file(
     thumbnail_filename = local_video_filename + "_thumbnail.jpg"
 
     bucket = "ultitracker-videos-test"
-    video_key = os.path.basename(local_video_filename)
-    thumbnail_key = os.path.basename(thumbnail_filename)
+    video_key = posixpath.join(game_id, "video.mp4")
+    thumbnail_key = posixpath.join(game_id, "thumbnail.jpg")
     
+    logger.info("Submitting extract video job")
     subprocess.Popen([
         "python", "-m", 
         "ultitrackerapi.extract_and_upload_video",
@@ -180,6 +185,7 @@ async def upload_file(
         game_id
     ])
 
+    logger.info("Adding game to DB")
     backend_instance.add_game(
         current_user,
         game_id=game_id,
@@ -196,3 +202,56 @@ async def upload_file(
     )
 
     return {"finished": True}
+
+
+@app.post("/annotator/get_images_to_annotate", response_model=models.ImgLocationListResponse)
+async def get_images_to_annotate(
+    current_user: models.User = Depends(auth.get_user_from_cookie),
+    game_ids: str = Form(...),
+    annotation_type: str = Form(...),
+    order_type: str = Form(...)
+):
+    queue_params = annotator_queue.AnnotatorQueueParams(
+        game_ids=game_ids.split(),
+        annotation_type=models.AnnotationTable[annotation_type],
+        order_type=annotator_queue.AnnotationOrderType[order_type]
+    )
+
+    images = annotator_queue.get_next_n_images(
+        backend=backend_instance, 
+        queue_params=queue_params
+    )
+
+    return images
+
+
+@app.post("/annotator/insert_annotation")
+async def insert_annotation(
+    img_id: str,
+    annotation_table: str,
+    annotation: dict,
+    current_user: models.User = Depends(auth.get_user_from_cookie),
+):
+    try:
+        backend_instance.insert_annotation(
+            user=current_user,
+            img_id=img_id,
+            annotation_table=models.AnnotationTable[annotation_table],
+            annotation_data=annotation
+        )
+    except Exception as e:
+        logger.error(
+            "Error with payload. "
+            "img_id: {}, "
+            "annotation_table: {}, "
+            "annotation: {}, "
+            "current_user: {}".format(
+                img_id, 
+                annotation_table,
+                annotation,
+                current_user
+            )
+        )
+        raise e
+
+    return True

@@ -4,16 +4,17 @@ import bleach
 from authlib.jose import jwt
 from authlib.jose.errors import DecodeError, ExpiredTokenError
 from datetime import datetime, timedelta
-from fastapi import Depends, HTTPException
+from fastapi import Depends, HTTPException, Cookie
 from fastapi.security import OAuth2PasswordBearer
 from passlib.hash import pbkdf2_sha256
+from starlette.requests import Request
 from starlette.status import HTTP_401_UNAUTHORIZED
 
-from ultitrackerapi import models, get_backend
+from ultitrackerapi import models, get_backend, get_logger
 
 SECRET_KEY = "secret"
 EXP_LENGTH = timedelta(seconds=3600)
-
+LOGGER = get_logger(__name__)
 
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/token")
 backend_instance = get_backend()
@@ -39,6 +40,7 @@ def construct_jwt(username: str) -> str:
         exp=(datetime.utcnow() + EXP_LENGTH).timestamp(),
         iat=datetime.utcnow().timestamp(),
         sub=username,
+        nbf=datetime.utcnow().timestamp(),
     ).dict()
 
     encoded_bytes_token = jwt.encode(
@@ -51,7 +53,9 @@ def construct_jwt(username: str) -> str:
     return encoded_unicode_token
 
 
-async def get_user_from_cookie(token: str = Depends(oauth2_scheme)):
+async def get_user_from_cookie(request: Request):
+    token = request.cookies.get("ultitracker-api-access-token")
+    LOGGER.info("token: {}".format(token))
     credentials_exception = HTTPException(
         status_code=HTTP_401_UNAUTHORIZED,
         detail="Could not validate credentials",
@@ -62,6 +66,10 @@ async def get_user_from_cookie(token: str = Depends(oauth2_scheme)):
         detail="Token expired",
         headers={"WWW-Authenticate": "Bearer"},
     )
+
+    if token is None:
+        raise credentials_exception
+    
     try:
         claims = jwt.decode(token, SECRET_KEY)
         try:
@@ -69,6 +77,7 @@ async def get_user_from_cookie(token: str = Depends(oauth2_scheme)):
         except ExpiredTokenError:
             raise timeout_exception
 
+        LOGGER.info(f"claims: {claims}")
         username: str = claims.get("sub")
 
         if username is None:

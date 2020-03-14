@@ -34,6 +34,15 @@ class Backend(ABC):
     ) -> bool:
         pass
 
+    def insert_annotation(
+        self,
+        user: models.User,
+        img_id: str,
+        annotation_table: models.AnnotationTable,
+        annotation_data: dict
+    ) -> bool:
+        pass
+
 
 class InMemoryBackend(Backend):
     def __init__(self, game_db: dict = {}, user_db: dict = {}):

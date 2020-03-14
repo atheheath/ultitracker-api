@@ -28,36 +28,13 @@ ADD ./ultitrackerapi /root/ultitrackerapi
 WORKDIR /root/ultitrackerapi
 RUN python setup.py install
 
-# # Add python application to root folder
-# RUN mv ./app /app
-
-# WORKDIR /
-
-# # run unittests
-# RUN python -m unittest tests
-
-# # copy in and install python requirements.txt
-# COPY ./requirements.txt /tmp/requirements.txt
-# RUN pip install -r /tmp/requirements.txt
-
-# RUN ls /app
-
-# # From https://github.com/nginxinc/docker-nginx/blob/1fe92b86a3c3a6482c54a0858d1fcb22e591279f/mainline/stretch/Dockerfile
-# CMD ["nginx", "-g", "daemon off;"]
-# # CMD ["nginx", "-c", "/etc/nginx/sites-available/uvicorn_nginx.conf", "-g", "daemon off;"]
-
-# # Deploy FastApi
-# CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "3000"]
-
-# Start nginx and uvicorn
 RUN chmod u+x /root/ultitrackerapi/scripts/docker/*
 
 ENV SERVER_API_PORT=3001
 ENV SERVER_IMAGE_PORT=6789
 ENV FASTAPI_MODULE=app.main:app
 
-# Get aws credentials in there
-ADD ./.aws/credentials /root/.aws/credentials
-ADD ./.aws/config /root/.aws/config
+# Throw in the ssl certs
+ADD ./letsencrypt /root/letsencrypt
 
 CMD ["bash", "/root/ultitrackerapi/scripts/docker/docker_start_uvicorn.sh"]

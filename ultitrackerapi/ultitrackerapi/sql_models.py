@@ -96,7 +96,7 @@ TableImgLocation = models.Table(
         """,
         """
         CREATE TABLE {full_name} (
-            img_id TEXT,
+            img_id TEXT NOT NULL,
             img_raw_path TEXT NOT NULL,
             img_type img_encoding NOT NULL,
             img_metadata JSONB NOT NULL,
@@ -153,8 +153,8 @@ TableFieldLines = models.Table(
     ],
 )
 
-TableGameplayState = models.Table(
-    table_name="gameplay_state",
+TableCameraAngle = models.Table(
+    table_name="camera_angle",
     schema_name=POSTGRES_SCHEMA,
     columns=["img_id", "is_valid"],
     column_types=[str, bool],
@@ -166,7 +166,7 @@ TableGameplayState = models.Table(
             PRIMARY KEY (img_id)
         )
         """.format(
-            full_name=models.Table.construct_full_name(POSTGRES_SCHEMA, "gameplay_state"),
+            full_name=models.Table.construct_full_name(POSTGRES_SCHEMA, "camera_angle"),
             img_location_full_name=TableImgLocation.full_name
         )
     ],
@@ -184,7 +184,7 @@ TableAnnotationTransaction = models.Table(
     column_types=[str, datetime.datetime, models.AnnotationTable, models.AnnotationAction],
     create_commands=[
         """
-        CREATE TYPE annotation_table AS ENUM ('player_bbox', 'field_lines', 'gameplay_state')
+        CREATE TYPE annotation_table AS ENUM ('player_bbox', 'field_lines', 'camera_angle')
         """,
         """
         CREATE TYPE annotation_action AS ENUM ('sent', 'submitted')
@@ -203,20 +203,3 @@ TableAnnotationTransaction = models.Table(
         ),
     ],
 )
-
-
-# DB = models.Database(
-#     table_name="ultitracker",
-#     tables=set(
-#         [
-#             TableImgLocation,
-#             TablePlayerBbox,
-#             TableFieldLines,
-#             TableGameplayState,
-#             TableAnnotationAction,
-#             TableGameMetadata,
-#             TableUsers,
-#             TableAuthorizationScheme,
-#         ]
-#     ),
-# )
