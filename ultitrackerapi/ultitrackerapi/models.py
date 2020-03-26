@@ -5,9 +5,7 @@ from enum import Enum
 from fastapi import Form
 from pydantic import BaseConfig, BaseModel
 from typing import Dict, List, Optional, Set, Type
-from ultitrackerapi import ANNOTATION_EXPIRATION_DURATION, get_logger
-
-ALGORITHM = "HS256"
+from ultitrackerapi import ANNOTATION_EXPIRATION_DURATION, ULTITRACKER_AUTH_JWT_ALGORITHM, get_logger
 
 
 logger = get_logger(__name__)
@@ -15,7 +13,7 @@ logger = get_logger(__name__)
 
 # NOTE: Header and Payload information is readable by everyone
 class Header(BaseModel):
-    alg: str = ALGORITHM
+    alg: str = ULTITRACKER_AUTH_JWT_ALGORITHM
     typ: str = "JWT"
 
 

@@ -2,7 +2,7 @@ import argparse
 import psycopg2 as psql
 
 from passlib.hash import pbkdf2_sha256
-from ultitrackerapi import get_backend, models, sql_backend, sql_models
+from ultitrackerapi import S3_BUCKET_NAME, get_backend, models, sql_backend, sql_models
 
 
 def initialize_schema(client: sql_backend.SQLClient):
@@ -65,7 +65,7 @@ def main():
             "away": "Team 2",
             "date": "2019-10-31",
             "length": "00:00:10",
-            "bucket": "ultitracker-videos-test",
+            "bucket": S3_BUCKET_NAME,
             "name": "Chicago",
         },
         thumbnail_key="chicago.jpeg",
@@ -80,7 +80,7 @@ def main():
             "away": "Team 3",
             "date": "2019-11-01",
             "length": "00:00:10",
-            "bucket": "ultitracker-videos-test",
+            "bucket": S3_BUCKET_NAME,
             "name": "Madison",
         },
         thumbnail_key="madison.jpeg",

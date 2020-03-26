@@ -127,7 +127,7 @@ def extract_and_upload_video(
     
     aws_lambda_payloads = [
         json.dumps({
-            "s3_bucket_path": "ultitracker-videos-test",
+            "s3_bucket_path": bucket,
             "s3_video_path": posixpath.join(posixpath.dirname(video_key), "chunks", basename),
             "s3_output_frames_path": posixpath.join(posixpath.dirname(video_key), "frames", posixpath.splitext(basename)[0]),
             "video_metadata": video_height_width
@@ -174,7 +174,6 @@ def extract_and_upload_video(
             )
 
     logger.debug("extract_and_upload_video: Received all lambda responses")
-
 
     logger.debug("extract_and_upload_video: Finished inserting image metadata")
 
