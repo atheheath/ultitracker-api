@@ -4,6 +4,7 @@
 # import logging
 import os
 import posixpath
+import psycopg2 as psql
 import subprocess
 import tempfile
 import time
@@ -17,7 +18,7 @@ from starlette.responses import Response
 from starlette.status import HTTP_401_UNAUTHORIZED, HTTP_404_NOT_FOUND
 from typing import List, Optional
 
-from ultitrackerapi import annotator_queue, auth, CORS_ORIGINS, get_backend, get_logger, get_s3Client, models, video
+from ultitrackerapi import CORS_ORIGINS, S3_BUCKET_NAME, ULTITRACKER_COOKIE_KEY, annotator_queue, auth, get_backend, get_logger, get_s3Client, models, video
 
 # sleep just to make sure the above happened
 time.sleep(1)
@@ -25,6 +26,14 @@ time.sleep(1)
 backend_instance = get_backend()
 s3Client = get_s3Client()
 logger = get_logger(__name__, "DEBUG")
+
+
+try:
+    backend_instance.client._establish_connection()
+
+except psql.DatabaseError as e:
+    logger.error("main: Couldn't connect to database. Aborting")
+    raise e
 
 logger.info("CORS_ORIGINS: {}".format(CORS_ORIGINS))
 
@@ -43,6 +52,11 @@ app.add_middleware(
 # # start s3 client
 # s3Client = boto3.client("s3")
 
+@app.get("/")
+async def return_welcome():
+    return {"message": "Welcome"}
+
+    
 @app.post("/token")
 async def login_for_access_token(
     form_data: OAuth2PasswordRequestForm = Depends(),
@@ -63,7 +77,7 @@ async def login_for_access_token(
     response = Response()
 
     response.set_cookie(
-        key="ultitracker-api-access-token",
+        key=ULTITRACKER_COOKIE_KEY,
         value=access_token,
         expires=auth.EXP_LENGTH.total_seconds(),
     )
@@ -76,7 +90,7 @@ async def logout_from_token(
 ):
     response = Response()
     response.set_cookie(
-        key="ultitracker-api-access-token",
+        key=ULTITRACKER_COOKIE_KEY,
         value="",
         expires=-1
     )
@@ -108,7 +122,7 @@ async def renew_access_token(
     access_token = auth.construct_jwt(username=current_user.username)
     response = Response()
     response.set_cookie(
-        key="ultitracker-api-access-token",
+        key=ULTITRACKER_COOKIE_KEY,
         value=access_token,
         expires=auth.EXP_LENGTH.total_seconds(),
     )
@@ -169,7 +183,6 @@ async def upload_file(
 
     thumbnail_filename = local_video_filename + "_thumbnail.jpg"
 
-    bucket = "ultitracker-videos-test"
     video_key = posixpath.join(game_id, "video.mp4")
     thumbnail_key = posixpath.join(game_id, "thumbnail.jpg")
     
@@ -177,7 +190,7 @@ async def upload_file(
     subprocess.Popen([
         "python", "-m", 
         "ultitrackerapi.extract_and_upload_video",
-        bucket,
+        S3_BUCKET_NAME,
         local_video_filename,
         thumbnail_filename,
         video_key,
@@ -196,7 +209,7 @@ async def upload_file(
             "home": home,
             "away": away,
             "date": date,
-            "bucket": bucket,
+            "bucket": S3_BUCKET_NAME,
             # "length": video_length,
         },
     )

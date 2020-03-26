@@ -1,0 +1,147 @@
+[
+    {
+        "Namespace": "aws:autoscaling:asg",
+        "OptionName": "MinSize",
+        "Value": "2"
+    },
+    {
+        "Namespace": "aws:autoscaling:launchconfiguration",
+        "OptionName": "EC2KeyName",
+        "Value": "ultitracker-api-key-pair"
+    },
+    {
+        "Namespace": "aws:autoscaling:launchconfiguration",
+        "OptionName": "IamInstanceProfile",
+        "Value": "ec2-s3-lambda"
+    },
+    {
+        "Namespace": "aws:autoscaling:launchconfiguration",
+        "OptionName": "SecurityGroups",
+        "Value": "sg-08673bc2cda3400cd"
+    },
+    {
+        "Namespace": "aws:autoscaling:trigger",
+        "OptionName": "BreachDuration",
+        "Value": "1"
+    },
+    {
+        "Namespace": "aws:autoscaling:trigger",
+        "OptionName": "MeasureName",
+        "Value": "RequestCount"
+    },
+    {
+        "Namespace": "aws:autoscaling:trigger",
+        "OptionName": "LowerThreshold",
+        "Value": "0"
+    },
+    {
+        "Namespace": "aws:autoscaling:trigger",
+        "OptionName": "Statistic",
+        "Value": "Sum"
+    },
+    {
+        "Namespace": "aws:autoscaling:trigger",
+        "OptionName": "Unit",
+        "Value": "Count"
+    },
+    {
+        "Namespace": "aws:autoscaling:trigger",
+        "OptionName": "Unit",
+        "Value": "Count"
+    },
+    {
+        "Namespace": "aws:autoscaling:trigger",
+        "OptionName": "UpperThreshold",
+        "Value": "10"
+    },
+    {
+        "Namespace": "aws:ec2:instances",
+        "OptionName": "InstanceTypes",
+        "Value": "t2.micro"
+    },
+    {
+        "Namespace": "aws:ec2:vpc",
+        "OptionName": "VPCId",
+        "Value": "vpc-0aeb10021e6f5dd39"
+    },
+    {
+        "Namespace": "aws:ec2:vpc",
+        "OptionName": "Subnets",
+        "Value": "subnet-05d8418bdcc58b14a,subnet-0a85de0892c1230fb"
+    },
+    {
+        "Namespace": "aws:ec2:vpc",
+        "OptionName": "ELBSubnets",
+        "Value": "subnet-05d8418bdcc58b14a,subnet-0a85de0892c1230fb"
+    },
+    {
+        "Namespace": "aws:ec2:vpc",
+        "OptionName": "AssociatePublicIpAddress",
+        "Value": "true"
+    },
+    {
+        "Namespace": "aws:elasticbeanstalk:application",
+        "OptionName": "Application Healthcheck URL",
+        "Value": "HTTP:80/"
+    },
+    {
+        "Namespace": "aws:elasticbeanstalk:environment",
+        "OptionName": "EnvironmentType",
+        "Value": "LoadBalanced"
+    },
+    {
+        "Namespace": "aws:elasticbeanstalk:environment",
+        "OptionName": "LoadBalancerType",
+        "Value": "classic"
+    },
+    {
+        "Namespace": "aws:elasticbeanstalk:environment:proxy",
+        "OptionName": "ProxyServer",
+        "Value": "none"
+    },
+    {
+        "Namespace": "aws:elasticbeanstalk:environment:process:default",
+        "OptionName": "Port",
+        "Value": "80"
+    },
+    {
+        "Namespace": "aws:elasticbeanstalk:environment:process:default",
+        "OptionName": "Protocol",
+        "Value": "HTTP"
+    },
+    {
+        "Namespace": "aws:elasticbeanstalk:environment:process:default",
+        "OptionName": "HealthCheckPath",
+        "Value": "HTTP:80/"
+    },
+    {
+        "Namespace": "aws:elb:loadbalancer",
+        "OptionName": "SecurityGroups",
+        "Value": "sg-08673bc2cda3400cd"
+    },
+    {
+        "Namespace": "aws:elb:loadbalancer",
+        "OptionName": "LoadBalancerHTTPSPort",
+        "Value": "443"
+    },
+    {
+        "Namespace": "aws:elb:listener",
+        "OptionName": "ListenerProtocol",
+        "Value": "HTTPS"
+    },
+    {
+        "Namespace": "aws:elb:listener",
+        "OptionName": "InstancePort",
+        "Value": "80"
+    },
+    {
+        "Namespace": "aws:elb:listener",
+        "OptionName": "InstanceProtocol",
+        "Value": "HTTP"
+    },
+    {
+        "Namespace": "aws:elb:listener",
+        "OptionName": "SSLCertificateId",
+        "Value": "arn:aws:iam::903398499662:server-certificate/api.ultitracker.com"
+    }
+]

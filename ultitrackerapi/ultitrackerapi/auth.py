@@ -10,10 +10,10 @@ from passlib.hash import pbkdf2_sha256
 from starlette.requests import Request
 from starlette.status import HTTP_401_UNAUTHORIZED
 
-from ultitrackerapi import models, get_backend, get_logger
+from ultitrackerapi import ULTITRACKER_AUTH_SECRET_KEY, ULTITRACKER_AUTH_TOKEN_EXP_LENGTH, ULTITRACKER_COOKIE_KEY, ULTITRACKER_URL, models, get_backend, get_logger
 
-SECRET_KEY = "secret"
-EXP_LENGTH = timedelta(seconds=3600)
+
+EXP_LENGTH = timedelta(seconds=ULTITRACKER_AUTH_TOKEN_EXP_LENGTH)
 LOGGER = get_logger(__name__)
 
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/token")
@@ -36,7 +36,7 @@ def construct_jwt(username: str) -> str:
     # we need to use dict here so that jwt can use encode
     header = models.Header().dict()
     payload = models.Payload(
-        iss="https://ultitracker.com",
+        iss=ULTITRACKER_URL,
         exp=(datetime.utcnow() + EXP_LENGTH).timestamp(),
         iat=datetime.utcnow().timestamp(),
         sub=username,
@@ -46,7 +46,7 @@ def construct_jwt(username: str) -> str:
     encoded_bytes_token = jwt.encode(
         header=header, 
         payload=payload, 
-        key=SECRET_KEY
+        key=ULTITRACKER_AUTH_SECRET_KEY
     )
     encoded_unicode_token = encoded_bytes_token.decode()
 
@@ -54,8 +54,7 @@ def construct_jwt(username: str) -> str:
 
 
 async def get_user_from_cookie(request: Request):
-    token = request.cookies.get("ultitracker-api-access-token")
-    LOGGER.info("token: {}".format(token))
+    token = request.cookies.get(ULTITRACKER_COOKIE_KEY)
     credentials_exception = HTTPException(
         status_code=HTTP_401_UNAUTHORIZED,
         detail="Could not validate credentials",
@@ -71,7 +70,7 @@ async def get_user_from_cookie(request: Request):
         raise credentials_exception
     
     try:
-        claims = jwt.decode(token, SECRET_KEY)
+        claims = jwt.decode(token, ULTITRACKER_AUTH_SECRET_KEY)
         try:
             claims.validate(now=datetime.utcnow().timestamp())
         except ExpiredTokenError:
