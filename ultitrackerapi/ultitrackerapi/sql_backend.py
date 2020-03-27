@@ -1,5 +1,6 @@
 import datetime
 import json
+import textwrap
 import uuid
 
 from typing import List
@@ -417,3 +418,64 @@ class SQLBackend(backend.Backend):
         result = self.client.execute(command)
 
         return result
+
+    def get_annotations(self, table: models.AnnotationTable):
+        logger.debug("sql_backend:SQLBackend:get_annotations: table: {}".format(table))
+
+        table_instance = sql_models.match_table_from_string(
+            table.name,
+            sql_models.DatabaseUltitracker
+        )
+
+        command = textwrap.dedent(
+            f"""
+            SELECT * FROM {table_instance.full_name}
+            """
+        )
+
+        result = self.client.execute(command)
+
+        return result
+
+    def get_image_path(self, img_id: str):
+        command = textwrap.dedent(
+            f"""
+            SELECT img_raw_path FROM {sql_models.TableImgLocation.full_name}
+            WHERE img_id = '{img_id}'
+            """
+        )
+
+        result = self.client.execute(command)
+
+        return result[0][0]
+
+    def query_images(self, query: dict):
+
+        where_query_command = ""
+        for i, (k, v) in enumerate(query.items()):
+            if i == 0:
+                where_query_command += "WHERE"
+
+            else:
+                where_query_command += " AND"
+
+            where_query_command += f" (il.img_metadata->>'{k}' = '{v}' OR gm.data->>'{k}' = '{v}')"
+
+        command = textwrap.dedent(
+            f"""
+            SELECT
+                il.*,
+                gm.data
+            FROM {sql_models.TableImgLocation.full_name} il
+            JOIN {sql_models.TableGameMetadata.full_name} gm ON il.game_id=gm.game_id
+            {where_query_command}
+            """
+        )
+
+        result = self.client.execute(command)
+        keys = sql_models.TableImgLocation.columns + ["data"]
+
+        return [
+            {k: v for k, v in zip(keys, line)}
+            for line in result
+        ]

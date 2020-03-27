@@ -1,7 +1,7 @@
 """API Definitions for ultitracker."""
 # import boto3
-# import datetime
 # import logging
+import datetime
 import os
 import posixpath
 import psycopg2 as psql
@@ -18,7 +18,7 @@ from starlette.responses import Response
 from starlette.status import HTTP_401_UNAUTHORIZED, HTTP_404_NOT_FOUND
 from typing import List, Optional
 
-from ultitrackerapi import CORS_ORIGINS, S3_BUCKET_NAME, ULTITRACKER_COOKIE_KEY, annotator_queue, auth, get_backend, get_logger, get_s3Client, models, video
+from ultitrackerapi import CORS_ORIGINS, S3_BUCKET_NAME, ULTITRACKER_COOKIE_KEY, annotator_queue, auth, get_backend, get_logger, get_s3Client, models, sql_models, video
 
 # sleep just to make sure the above happened
 time.sleep(1)
@@ -49,8 +49,6 @@ app.add_middleware(
     expose_headers=[""]
 )
 
-# # start s3 client
-# s3Client = boto3.client("s3")
 
 @app.get("/")
 async def return_welcome():
@@ -268,3 +266,54 @@ async def insert_annotation(
         raise e
 
     return True
+
+
+@app.get("/get_annotations")
+def get_annotations(annotation_table: str):
+    table = getattr(models.AnnotationTable, annotation_table, None)
+    if table is None:
+        raise HTTPException(
+            status_code=HTTP_404_NOT_FOUND, 
+            detail="annotation_table not found: {}".format(annotation_table)
+        )
+
+    annotations = backend_instance.get_annotations(table)
+
+    return annotations
+
+
+@app.get("/get_image")
+def get_image(img_id: str):
+    s3_path = backend_instance.get_image_path(img_id)
+    if not s3_path:
+        error = FileExistsError("Image path does not exist for img_id: {}".format(img_id))
+        logger.error(repr(error))
+        return HTTPException(status_code=HTTP_404_NOT_FOUND, detail="Image Id does not exist")
+
+    bucket, key = models.parse_bucket_key_from_url(s3_path)
+    
+    expiration_time = datetime.datetime.now() + datetime.timedelta(seconds=3600)
+
+    return models.ImgLocationResponse(
+        img_id=img_id,
+        img_path=s3_path,
+        annotation_expiration_utc_time=expiration_time
+    )
+
+
+@app.get("/query_images")
+def query_images(query: str):
+    """Queries all image metadata and returns all entries in `img_location` 
+    where each key, value pair in the query matches the corresponding key, value 
+    pair in the image metadata.
+    """
+    import json
+
+    try:
+        parsed_query = json.loads(query)
+    except json.decoder.JSONDecodeError:
+        raise HTTPException(status_code=400, detail="Expect query as a json")
+
+    results = backend_instance.query_images(parsed_query)
+
+    return results
