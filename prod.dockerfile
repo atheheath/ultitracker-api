@@ -35,7 +35,4 @@ ENV SERVER_API_PORT=3001
 ENV SERVER_IMAGE_PORT=6789
 ENV FASTAPI_MODULE=app.main:app
 
-# Throw in the ssl certs
-ADD ./letsencrypt /root/letsencrypt
-
 CMD ["bash", "/root/ultitrackerapi/scripts/docker/docker_start_uvicorn_prod.sh"]
