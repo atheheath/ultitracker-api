@@ -203,3 +203,26 @@ TableAnnotationTransaction = models.Table(
         ),
     ],
 )
+
+
+DatabaseUltitracker = models.Database(
+    name="ultitracker",
+    tables=set([
+        TableUsers,
+        TableGameMetadata,
+        TableAuthorizationScheme,
+        TableImgLocation,
+        TablePlayerBbox,
+        TableFieldLines,
+        TableCameraAngle,
+        TableAnnotationTransaction
+    ])
+)
+
+
+def match_table_from_string(table_str: str, db: models.Database):
+    for table in db.tables:
+        if table_str == table.table_name:
+            return table
+
+    return None

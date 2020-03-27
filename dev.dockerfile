@@ -60,4 +60,4 @@ ENV FASTAPI_MODULE=app.main:app
 ADD ./.aws/credentials /root/.aws/credentials
 ADD ./.aws/config /root/.aws/config
 
-CMD ["bash", "/root/ultitrackerapi/scripts/docker/docker_start_uvicorn.sh"]
+CMD ["bash", "/root/ultitrackerapi/scripts/docker/docker_start_uvicorn_dev.sh"]

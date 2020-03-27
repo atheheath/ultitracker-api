@@ -37,4 +37,4 @@ ENV FASTAPI_MODULE=app.main:app
 # Throw in the ssl certs
 ADD ./letsencrypt /root/letsencrypt
 
-CMD ["bash", "/root/ultitrackerapi/scripts/docker/docker_start_uvicorn.sh"]
+CMD ["bash", "/root/ultitrackerapi/scripts/docker/docker_start_uvicorn_prod.sh"]

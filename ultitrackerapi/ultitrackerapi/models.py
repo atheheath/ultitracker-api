@@ -103,6 +103,7 @@ class GameResponse(BaseModel):
                 ExpiresIn=60 * 60 * 2,
             )
     
+    
 class GameList(BaseModel):
     game_list: List[Game]
 
@@ -133,6 +134,9 @@ class Table(BaseModel):
 
         if len(self.columns) != len(self.column_types):
             raise ValueError("columns and column_types must have the same length")
+
+    def __hash__(self):
+        return hash(self.table_name + self.schema_name + ",".join(self.columns))
 
     @staticmethod
     def construct_full_name(schema_name, table_name):
