@@ -30,6 +30,7 @@ RUN python setup.py install
 
 RUN chmod u+x /root/ultitrackerapi/scripts/docker/*
 
+EXPOSE 80 443
 ENV SERVER_API_PORT=3001
 ENV SERVER_IMAGE_PORT=6789
 ENV FASTAPI_MODULE=app.main:app
