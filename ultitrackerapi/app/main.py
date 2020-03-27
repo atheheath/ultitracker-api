@@ -269,7 +269,10 @@ async def insert_annotation(
 
 
 @app.get("/get_annotations")
-def get_annotations(annotation_table: str):
+def get_annotations(
+    annotation_table: str,
+    current_user: models.User = Depends(auth.get_user_from_cookie)
+):
     table = getattr(models.AnnotationTable, annotation_table, None)
     if table is None:
         raise HTTPException(
@@ -283,7 +286,10 @@ def get_annotations(annotation_table: str):
 
 
 @app.get("/get_image")
-def get_image(img_id: str):
+def get_image(
+    img_id: str,
+    current_user: models.User = Depends(auth.get_user_from_cookie)
+):
     s3_path = backend_instance.get_image_path(img_id)
     if not s3_path:
         error = FileExistsError("Image path does not exist for img_id: {}".format(img_id))
@@ -302,7 +308,10 @@ def get_image(img_id: str):
 
 
 @app.get("/query_images")
-def query_images(query: str):
+def query_images(
+    query: str,
+    current_user: models.User = Depends(auth.get_user_from_cookie)
+):
     """Queries all image metadata and returns all entries in `img_location` 
     where each key, value pair in the query matches the corresponding key, value 
     pair in the image metadata.
