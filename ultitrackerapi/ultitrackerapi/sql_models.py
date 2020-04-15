@@ -137,7 +137,7 @@ TableFieldLines = models.Table(
     column_types=[str, models.LineSegment, models.LineId],
     create_commands=[
         """
-        CREATE TYPE line_id AS ENUM ('top_sideline', 'left_back_endzone', 'left_front_endzone', 'right_front_endzone', 'right_back_endzone', 'bottom_sideline')
+        CREATE TYPE line_id AS ENUM ('top_sideline', 'left_back_endzone', 'left_front_endzone', 'right_front_endzone', 'right_back_endzone', 'bottom_sideline', 'fifty_yardline', 'top_hash', 'bottom_hash')
         """,
         """
         CREATE TABLE {full_name} (
