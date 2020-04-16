@@ -172,6 +172,9 @@ class LineId(Enum):
     right_front_endzone = 3
     right_back_endzone = 4
     bottom_sideline = 5
+    fifty_yardline = 6
+    top_hash = 7
+    bottom_hash = 8
 
 
 class LineSegment(BaseModel):
