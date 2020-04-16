@@ -43,49 +43,62 @@ def main():
 
     client = sql_backend.SQLClient()
 
-    initialize_schema(client)
+    try:
+        initialize_schema(client)
+    except psql.errors.DuplicateSchema:
+        pass
+
     initialize_tables(client)
 
     backend = get_backend()
 
-    backend.add_user(
-        models.User(
-            username="test",
-            email="test@test.com",
-            full_name="Jane Doe"
-        ),
-        salted_password=pbkdf2_sha256.hash("test"),
-    )
+    try:
+        backend.add_user(
+            models.User(
+                username="test",
+                email="test@test.com",
+                full_name="Jane Doe"
+            ),
+            salted_password=pbkdf2_sha256.hash("test"),
+        )
+    except psql.errors.UniqueViolation:
+        pass
 
-    backend.add_game(
-        user=backend.get_user(username="test"),
-        game_id="test_vid_1.mp4",
-        data={
-            "home": "Team 1",
-            "away": "Team 2",
-            "date": "2019-10-31",
-            "length": "00:00:10",
-            "bucket": S3_BUCKET_NAME,
-            "name": "Chicago",
-        },
-        thumbnail_key="chicago.jpeg",
-        video_key="test_vid_1.mp4",
-    )
+    try:
+        backend.add_game(
+            user=backend.get_user(username="test"),
+            game_id="test_vid_1.mp4",
+            data={
+                "home": "Team 1",
+                "away": "Team 2",
+                "date": "2019-10-31",
+                "length": "00:00:10",
+                "bucket": S3_BUCKET_NAME,
+                "name": "Chicago",
+            },
+            thumbnail_key="chicago.jpeg",
+            video_key="test_vid_1.mp4",
+        )
+    except psql.errors.UniqueViolation:
+        pass
 
-    backend.add_game(
-        user=backend.get_user(username="test"),
-        game_id="test_vid_2",
-        data={
-            "home": "Team 1",
-            "away": "Team 3",
-            "date": "2019-11-01",
-            "length": "00:00:10",
-            "bucket": S3_BUCKET_NAME,
-            "name": "Madison",
-        },
-        thumbnail_key="madison.jpeg",
-        video_key="test_vid_2.mp4",
-    )
+    try:
+        backend.add_game(
+            user=backend.get_user(username="test"),
+            game_id="test_vid_2",
+            data={
+                "home": "Team 1",
+                "away": "Team 3",
+                "date": "2019-11-01",
+                "length": "00:00:10",
+                "bucket": S3_BUCKET_NAME,
+                "name": "Madison",
+            },
+            thumbnail_key="madison.jpeg",
+            video_key="test_vid_2.mp4",
+        )
+    except psql.errors.UniqueViolation:
+        pass
 
 
 if __name__ == "__main__":
