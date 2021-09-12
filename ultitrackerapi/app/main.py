@@ -16,7 +16,7 @@ from starlette.middleware.cors import CORSMiddleware
 from starlette.requests import Request
 from starlette.responses import Response
 from starlette.status import HTTP_401_UNAUTHORIZED, HTTP_404_NOT_FOUND
-from typing import List, Optional
+from typing import List, Optional, Union
 
 from ultitrackerapi import CORS_ORIGINS, S3_BUCKET_NAME, ULTITRACKER_COOKIE_KEY, annotator_queue, auth, get_backend, get_logger, get_s3Client, models, sql_models, video
 
@@ -240,7 +240,7 @@ async def get_images_to_annotate(
 async def insert_annotation(
     img_id: str,
     annotation_table: str,
-    annotation: dict,
+    annotation: Union[models.AnnotationPlayerBboxes, models.AnnotationFieldLines, models.AnnotationCameraAngle],
     current_user: models.User = Depends(auth.get_user_from_cookie),
 ):
     try:
