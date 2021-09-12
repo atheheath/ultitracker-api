@@ -1,3 +1,4 @@
+import os
 import ultitrackerapi
 
 from enum import Enum
@@ -7,6 +8,7 @@ from ultitrackerapi import get_logger, models, sql_backend
 
 
 logger = get_logger(__name__, "DEBUG")
+
 
 class AnnotationOrderType(Enum):
     random = 0
@@ -123,7 +125,11 @@ def get_next_n_images(
         order_by="ORDER BY A.frame_number" if queue_params.order_type == AnnotationOrderType.sequential else "ORDER BY RANDOM()"
     )
 
-    results = backend.client.execute(available_images_query)
+    one_line_query = available_images_query.replace(os.linesep, ' ').replace('\t', '')
+
+    logger.debug(f"one_line_query: {one_line_query}")
+
+    results = backend.client.execute(one_line_query)
 
     logger.debug("get_next_n_images result: {}".format(results))
 

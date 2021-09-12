@@ -59,7 +59,9 @@ def insert_images(
             include_comma="," if i < (len(img_raw_paths) - 1) else ""
         )
     
-    backend_instance.client.execute(command)
+    one_line_command = command.replace(os.linesep, ' ').replace('\t', '')
+    logger.debug(f"insert_images command: {one_line_command}")
+    backend_instance.client.execute(one_line_command)
 
 
 def extract_and_upload_video(
