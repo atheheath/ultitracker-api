@@ -3,7 +3,7 @@ import json
 import textwrap
 import uuid
 
-from typing import List
+from typing import List, Union
 from ultitrackerapi import backend, get_s3Client, models, sql_models
 
 import psycopg2 as psql
@@ -345,36 +345,22 @@ class SQLBackend(backend.Backend):
         user: models.User,
         img_id: str,
         annotation_table: models.AnnotationTable,
-        annotation_data: dict,
+        annotation_data: Union[models.AnnotationPlayerBboxes, models.AnnotationFieldLines, models.AnnotationCameraAngle]
     ) -> bool:
         current_time = datetime.datetime.utcnow()
 
         is_empty = False
         if annotation_table == models.AnnotationTable.player_bbox:
             table = sql_models.TablePlayerBbox
-            model = models.AnnotationPlayerBboxes(**annotation_data)
-            if len(model.bboxes) == 0:
+            
+            if len(annotation_data.bboxes) == 0:
                 is_empty = True
 
         elif annotation_table == models.AnnotationTable.field_lines:
             table = sql_models.TableFieldLines
-            model = models.AnnotationFieldLines(
-                img_id=annotation_data['img_id'],
-                line_coords=[
-                    models.LineSegment(
-                        x1=coord['x1'],
-                        y1=coord['y1'],
-                        x2=coord['x2'],
-                        y2=coord['y2'],
-                        line_id=models.LineId[coord['line_id']]
-                    )
-                    for coord in annotation_data['line_coords']
-                ]
-            )
 
         elif annotation_table == models.AnnotationTable.camera_angle:
             table = sql_models.TableCameraAngle
-            model = models.AnnotationCameraAngle(**annotation_data)
 
         else:
             raise ValueError("Invalid annotation_table: {}".format(annotation_table))
@@ -412,7 +398,7 @@ class SQLBackend(backend.Backend):
                 annotation_transaction_insert=annotation_transaction_command,
                 annotation_table=table.full_name,
                 annotation_columns="(" + ", ".join(table.columns) + ")",
-                annotation_values=annotation_to_sql_values(model),
+                annotation_values=annotation_to_sql_values(annotation_data),
             )
 
         result = self.client.execute(command)
