@@ -5,7 +5,7 @@ with open("./requirements.txt", "r") as f:
 
 setup(
     name="UltitrackerAPI",
-    version="0.0.6",
+    version="2021.09.11",
     packages=["ultitrackerapi",],
     license="Creative Commons Attribution-Noncommercial-Share Alike license",
     # long_description=open('README.txt').read(),
